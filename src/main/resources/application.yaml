@@ -2,3 +2,8 @@ spring.datasource:
   url: jdbc:postgresql://localhost:5432/docdrop
   username: postgres
   password: postgres
+
+spring.mvc:
+  static-path-pattern: /static/**
+
+upload-path: "./upload"

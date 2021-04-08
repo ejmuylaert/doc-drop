@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Documents</title>
+
+    <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.0.0-beta3/css/bootstrap.min.css}"/>
+</head>
+<body>
+
+<form method="post" th:action="@{/upload}" enctype="multipart/form-data">
+
+    <p th:text="${error}" th:if="${error ne null}"></p>
+    <div class="form-group row">
+        <label for="file" class="col-sm-1 col-form-label">File</label>
+        <div class="col-sm-3">
+            <input type="file" name="file" id="file" class="form-control"/>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="filename" class="col-sm-1 col-form-label">Name</label>
+        <div class="col-sm-3">
+            <input type="text" name="filename" id="filename" class="form-control"/>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-1"></div>
+        <div class="col-sm-3">
+            <button type="submit" class="btn btn-primary">Upload Document</button>
+        </div>
+    </div>
+</form>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th scope="col">Name</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="doc : ${documents}">
+        <td th:text="${doc.displayName}"></td>
+    </tr>
+    </tbody>
+</table>
+
+</body>
+</html>
