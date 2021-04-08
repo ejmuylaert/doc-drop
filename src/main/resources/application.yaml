@@ -6,4 +6,5 @@ spring.datasource:
 spring.mvc:
   static-path-pattern: /static/**
 
-upload-path: "./upload"
+upload:
+  path: "./upload"

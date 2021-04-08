@@ -18,11 +18,9 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final Path uploadPath;
 
-    public DocumentService(@Value("upload") String uploadDirectory,
+    public DocumentService(@Value("${upload.path}") String uploadDirectory,
                            DocumentRepository documentRepository) {
-        System.out.println("UPLOAD: " + uploadDirectory);
         this.uploadPath = Paths.get(uploadDirectory);
-        System.out.println("PATH: " + uploadPath);
         this.documentRepository = documentRepository;
     }
 
