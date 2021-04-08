@@ -1,5 +1,6 @@
 package org.ej.docdrop.service;
 
+import org.ej.docdrop.AbstractDatabaseTest;
 import org.ej.docdrop.domain.Document;
 import org.ej.docdrop.repository.DocumentRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +25,7 @@ import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTest
 @TestPropertySource(properties = {
         "spring.jpa.hibernate.ddl-auto=validate"
 })
-class DocumentServiceTest {
+class DocumentServiceTest extends AbstractDatabaseTest {
 
     private final DocumentRepository repository;
     private final DocumentService service;
