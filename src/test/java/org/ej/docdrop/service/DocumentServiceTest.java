@@ -45,34 +45,38 @@ class DocumentServiceTest extends AbstractDatabaseTest {
     }
 
     @Test
-    void moveFileToPermanentStorageLocation() {
+    void moveFileToPermanentStorageLocation() throws IOException {
         // Given, When
-        service.store(uploadPath, "original filename", Optional.of("new name"));
+        Path testFile = uploadPath.resolve("my-ut-test-file");
+        Files.writeString(testFile, "unit test file");
+        service.store(testFile, "original filename", Optional.of("new name"));
 
         // Then
         Document document = repository.findAll().iterator().next();
         Path documentLocation = Paths.get(document.getFilepath());
 
-        assertThat(Files.exists(documentLocation)).isTrue();
-        assertThat(Files.exists(uploadPath)).isFalse();
+        assertThat(Files.exists(testFile)).isFalse();
+        // The filepath should be stored releative to the storagePath, but not include it
+        assertThat(documentLocation.getParent()).isNotEqualTo(storagePath.getParent());
+        assertThat(documentLocation).isNotEqualTo(testFile);
 
-        assertThat(documentLocation).isNotEqualTo(uploadPath);
-        assertThat(documentLocation.getParent()).isEqualTo(storagePath.getParent());
+        // Check if the file exists
+        Path storedFilePath = storagePath.getParent().resolve(documentLocation);
+        assertThat(Files.exists(storedFilePath)).isTrue();
     }
 
     @Test
     void storeDocumentEntry() throws IOException {
         // Given
-        Files.writeString(uploadPath, "unit test file");
+        Path testFile = uploadPath.resolve("store-doc-entry");
+        Files.writeString(testFile, "unit test file");
 
         //  When
-        service.store(uploadPath, "original filename", Optional.of("new name"));
+        service.store(testFile, "original filename", Optional.of("new name"));
 
         // Then
         Document document = repository.findAll().iterator().next();
 
-        Path storedFilePath = Paths.get(document.getFilepath());
-        assertThat(storedFilePath.getParent()).isEqualTo(storagePath.getParent());
         assertThat(document.getOriginalName()).isEqualTo("original filename");
         assertThat(document.getName()).isEqualTo("new name");
     }
@@ -89,8 +93,6 @@ class DocumentServiceTest extends AbstractDatabaseTest {
         // Then
         Document document = repository.findAll().iterator().next();
 
-        Path storedFilePath = Paths.get(document.getFilepath());
-        assertThat(storedFilePath.getParent()).isEqualTo(storagePath.getParent());
         assertThat(document.getOriginalName()).isEqualTo("original filename");
         assertThat(document.getName()).isNull();
     }

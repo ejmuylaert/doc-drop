@@ -41,7 +41,9 @@
     </thead>
     <tbody>
     <tr th:each="doc : ${documents}">
-        <td th:text="${doc.displayName}"></td>
+        <td>
+            <a th:href="|/download/${doc.id}|" th:text="${doc.displayName}">Download</a>
+        </td>
     </tr>
     </tbody>
 </table>

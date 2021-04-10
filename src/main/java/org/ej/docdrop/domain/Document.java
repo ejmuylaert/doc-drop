@@ -28,6 +28,10 @@ public class Document {
         this.name = name;
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public String getDisplayName() {
         return name == null ? originalName : name;
     }

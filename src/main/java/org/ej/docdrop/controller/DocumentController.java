@@ -5,17 +5,23 @@ import org.ej.docdrop.repository.DocumentRepository;
 import org.ej.docdrop.service.DocumentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 @Controller
@@ -23,11 +29,16 @@ public class DocumentController {
 
     private final static Logger log = LoggerFactory.getLogger(DocumentController.class);
 
+    private final String uploadDirectory;
     private final DocumentService documentService;
     private final DocumentRepository documentRepository;
 
-    public DocumentController(DocumentService documentService,
-                              DocumentRepository documentRepository) {
+    public DocumentController(
+            @Value("${upload.path}") String uploadDirectory,
+            DocumentService documentService,
+            DocumentRepository documentRepository) {
+
+        this.uploadDirectory = uploadDirectory;
         this.documentService = documentService;
         this.documentRepository = documentRepository;
     }
@@ -62,5 +73,21 @@ public class DocumentController {
         attributes.addFlashAttribute("message", "File uploaded");
 
         return "redirect:/";
+    }
+
+    @GetMapping("/download/{id}")
+    ResponseEntity<FileSystemResource> downloadFile(@PathVariable("id") Long id) {
+
+        Document document = documentRepository.findById(id).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"));
+
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.setContentType(MediaType.APPLICATION_PDF);
+        responseHeaders.setContentDisposition(ContentDisposition.attachment().filename(document.getDisplayName()).build());
+
+        Path documentFilePath = Paths.get(uploadDirectory, document.getFilepath());
+
+        return new ResponseEntity<>(new FileSystemResource(documentFilePath), responseHeaders,
+                HttpStatus.OK);
     }
 }

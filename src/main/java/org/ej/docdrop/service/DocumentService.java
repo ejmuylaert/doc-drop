@@ -25,16 +25,16 @@ public class DocumentService {
     }
 
     public void store(Path file, String originalName, Optional<String> givenName) {
-        Path targetFilename = uploadPath.resolve(UUID.randomUUID().toString());
+        String filename = UUID.randomUUID().toString();
+        Path targetFilePath = uploadPath.resolve(filename);
 
         try {
-            Files.move(file, targetFilename);
+            Files.move(file, targetFilePath);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        Document document = new Document(targetFilename.toString(), originalName,
-                givenName.orElse(null));
+        Document document = new Document(filename, originalName, givenName.orElse(null));
 
         documentRepository.save(document);
     }
