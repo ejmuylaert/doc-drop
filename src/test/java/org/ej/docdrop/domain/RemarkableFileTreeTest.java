@@ -21,7 +21,7 @@ class RemarkableFileTreeTest {
                     .setParent(null)
                     .setPinned(false)
                     .setSynced(true)
-                    .setType("DocumentType")
+                    .setType(DocumentType.DOCUMENT)
                     .setVersion(4)
                     .setVisibleName("Sketch");
 

@@ -12,7 +12,7 @@ public class RemarkableMetadataBuilder {
     private UUID parent;
     private boolean pinned;
     private boolean synced;
-    private String type;
+    private DocumentType type;
     private int version;
     private String visibleName;
 
@@ -56,7 +56,7 @@ public class RemarkableMetadataBuilder {
         return this;
     }
 
-    public RemarkableMetadataBuilder setType(String type) {
+    public RemarkableMetadataBuilder setType(DocumentType type) {
         this.type = type;
         return this;
     }

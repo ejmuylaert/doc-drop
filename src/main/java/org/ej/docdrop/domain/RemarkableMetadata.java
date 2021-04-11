@@ -24,7 +24,7 @@ public class RemarkableMetadata {
     private final UUID parent;
     private final boolean pinned;
     private final boolean synced;
-    private final String type;
+    private final DocumentType type;
     private final int version;
     private final String visibleName;
 
@@ -37,7 +37,7 @@ public class RemarkableMetadata {
                               @JsonProperty("parent") UUID parent,
                               @JsonProperty("pinned") boolean pinned,
                               @JsonProperty("synced") boolean synced,
-                              @JsonProperty("type") String type,
+                              @JsonProperty("type") DocumentType type,
                               @JsonProperty("version") int version,
                               @JsonProperty("visibleName") String visibleName) {
         this.deleted = deleted;
@@ -85,7 +85,7 @@ public class RemarkableMetadata {
         return synced;
     }
 
-    public String getType() {
+    public DocumentType getType() {
         return type;
     }
 

@@ -30,7 +30,7 @@ class RemarkableMetadataTest {
                         .setParent(UUID.fromString("cb4b44c8-07fe-41b6-9fd9-34b930f982c8"))
                         .setPinned(false)
                         .setSynced(true)
-                        .setType("DocumentType")
+                        .setType(DocumentType.DOCUMENT)
                         .setVersion(4)
                         .setVisibleName("Sketch")
                         .create();
@@ -72,7 +72,7 @@ class RemarkableMetadataTest {
                         .setParent(UUID.fromString("cb4b44c8-07fe-41b6-9fd9-34b930f982c8"))
                         .setPinned(false)
                         .setSynced(true)
-                        .setType("DocumentType")
+                        .setType(DocumentType.DOCUMENT)
                         .setVersion(4)
                         .setVisibleName("Sketch")
                         .create();
