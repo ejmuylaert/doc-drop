@@ -11,7 +11,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RemarkableDocumentTest {
+class RemarkableMetadataTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -20,9 +20,20 @@ class RemarkableDocumentTest {
         // Given
         Instant lastModified =
                 LocalDateTime.of(2020, 5, 22, 9, 17, 35, 752 * 1000000).toInstant(ZoneOffset.UTC);
-        RemarkableDocument expectedDocument = new RemarkableDocument(false, lastModified
-                , 0, false, false, UUID.fromString("cb4b44c8-07fe-41b6-9fd9-34b930f982c8"), false
-                , true, "DocumentType", 4, "Sketch");
+        RemarkableMetadata expectedData =
+                new RemarkableMetadataBuilder()
+                        .setDeleted(false)
+                        .setLastModified(lastModified)
+                        .setLastOpenedPage(0)
+                        .setMetadataModified(false)
+                        .setModified(false)
+                        .setParent(UUID.fromString("cb4b44c8-07fe-41b6-9fd9-34b930f982c8"))
+                        .setPinned(false)
+                        .setSynced(true)
+                        .setType("DocumentType")
+                        .setVersion(4)
+                        .setVisibleName("Sketch")
+                        .create();
 
         String metadata = """
                 {
@@ -40,10 +51,10 @@ class RemarkableDocumentTest {
                 }""";
 
         // When
-        RemarkableDocument document = mapper.readValue(metadata, RemarkableDocument.class);
+        RemarkableMetadata data = mapper.readValue(metadata, RemarkableMetadata.class);
 
         // Then
-        assertThat(document).isEqualTo(expectedDocument);
+        assertThat(data).isEqualTo(expectedData);
     }
 
     @Test
@@ -51,9 +62,20 @@ class RemarkableDocumentTest {
         // Given
         Instant lastModified =
                 LocalDateTime.of(2020, 5, 22, 9, 17, 35, 752 * 1000000).toInstant(ZoneOffset.UTC);
-        RemarkableDocument document = new RemarkableDocument(false, lastModified
-                , 0, false, false, UUID.fromString("cb4b44c8-07fe-41b6-9fd9-34b930f982c8"), false
-                , true, "DocumentType", 4, "Sketch");
+        RemarkableMetadata data =
+                new RemarkableMetadataBuilder()
+                        .setDeleted(false)
+                        .setLastModified(lastModified)
+                        .setLastOpenedPage(0)
+                        .setMetadataModified(false)
+                        .setModified(false)
+                        .setParent(UUID.fromString("cb4b44c8-07fe-41b6-9fd9-34b930f982c8"))
+                        .setPinned(false)
+                        .setSynced(true)
+                        .setType("DocumentType")
+                        .setVersion(4)
+                        .setVisibleName("Sketch")
+                        .create();
 
         String expected = """
                 {
@@ -71,7 +93,7 @@ class RemarkableDocumentTest {
                 }""";
 
         // When
-        String json = mapper.writeValueAsString(document);
+        String json = mapper.writeValueAsString(data);
 
         // Then
         assertThat(mapper.readTree(json)).isEqualTo(mapper.readTree(expected));
