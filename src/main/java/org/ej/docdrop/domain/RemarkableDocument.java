@@ -17,6 +17,10 @@ public class RemarkableDocument {
         return uuid;
     }
 
+    public String getName() {
+        return metadata.getVisibleName();
+    }
+
     public boolean hasParent(UUID parentId) {
         return Objects.equals(metadata.getParent(), parentId);
     }
