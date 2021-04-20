@@ -6,6 +6,7 @@ import org.ej.docdrop.domain.CachedDocumentInfo;
 import org.ej.docdrop.domain.DocumentType;
 import org.ej.docdrop.domain.RemarkableMetadata;
 import org.ej.docdrop.repository.CachedDocumentInfoRepository;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +23,7 @@ import java.util.UUID;
  * Even if the device is connected, it just sends the instruction to `RemarkableClient` and returns
  * control to the caller. This class just waits for the updates coming in.
  */
+@Service
 public class RemarkableService {
 
     private final RemarkableClient client;

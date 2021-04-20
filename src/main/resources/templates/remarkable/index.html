@@ -8,6 +8,10 @@
 </head>
 <body>
 
+<form method="post" th:action="@{/browse/refresh}">
+    <button type="submit" class="btn btn-primary">Refresh file list</button>
+</form>
+
 <table class="table table-striped">
     <thead>
     <tr>
@@ -16,7 +20,10 @@
     </thead>
     <tbody>
     <tr th:each="doc : ${documents}">
-        <td th:text="${doc.name}">Filename ...</td>
+
+        <td>
+            <a th:href="|/browse/${doc.parentId}|" th:text="${doc.name}">open folder ...</a>
+        </td>
     </tr>
     </tbody>
 </table>
