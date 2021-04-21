@@ -69,6 +69,8 @@ public class RemarkableClient {
             } finally {
                 connectionLock.unlock(lockStamp);
             }
+
+            errorHandler.accept(null);
         });
 
         return RemarkableStatus.AVAILABLE;

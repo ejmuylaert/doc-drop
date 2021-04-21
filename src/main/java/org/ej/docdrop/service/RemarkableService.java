@@ -6,6 +6,8 @@ import org.ej.docdrop.domain.CachedDocumentInfo;
 import org.ej.docdrop.domain.DocumentType;
 import org.ej.docdrop.domain.RemarkableMetadata;
 import org.ej.docdrop.repository.CachedDocumentInfoRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,6 +28,8 @@ import java.util.UUID;
 @Service
 public class RemarkableService {
 
+    private final static Logger log = LoggerFactory.getLogger(RemarkableService.class);
+
     private final RemarkableClient client;
     private final CachedDocumentInfoRepository repository;
 
@@ -41,7 +45,21 @@ public class RemarkableService {
     }
 
     public void refreshFileTree() {
-        client.readFileTree(this::persistInfo, null);
+
+        log.info("mark existing documents");
+        repository.setRecentStatus(false);
+
+        client.readFileTree(this::persistInfo, exception -> {
+            if (exception == null) {
+                log.info("delete old documents");
+                repository.deleteDocumentsWithRecentStatus(false);
+            } else {
+                log.error("error during refreshing file tree", exception);
+                log.info("delete incomplete import, restored old files");
+                repository.deleteDocumentsWithRecentStatus(true);
+                repository.setRecentStatus(true);
+            }
+        });
     }
 
     private void persistInfo(UUID fileId, String metadata) {

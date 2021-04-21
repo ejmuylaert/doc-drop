@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -134,5 +135,71 @@ class RemarkableServiceTest extends AbstractDatabaseTest {
         // Then
         assertThat(rootFolder).hasSize(1);
         assertThat(rootFolder).contains(new CachedDocumentInfo(file1Id, file2Id, false, "file-1"));
+    }
+
+    @Test
+    void onCompleteDeleteOldDocument() {
+        // Given
+        RemarkableClient client = mock(RemarkableClient.class);
+
+        repository.save(new CachedDocumentInfo(UUID.randomUUID(), null, false, "old-name"));
+        RemarkableService service = new RemarkableService(client, repository);
+        assertThat(service.getFolder(null)).hasSize(1); // ensure existing file is in db.
+
+        UUID fileId = UUID.randomUUID();
+        when(client.readFileTree(any(), any())).thenAnswer(invocation -> {
+            BiConsumer<UUID, String> fileConsumer = invocation.getArgument(0, BiConsumer.class);
+            String fileContent =
+                    mapper.writeValueAsString(metadataBuilder.setVisibleName("new-name").setParent(null).create());
+            fileConsumer.accept(fileId, fileContent);
+
+            Consumer<ConnectionException> completionHandler = invocation.getArgument(1,
+                    Consumer.class);
+            completionHandler.accept(null);
+
+            return RemarkableStatus.AVAILABLE;
+        });
+
+        // When
+        service.refreshFileTree();
+        List<CachedDocumentInfo> folder = service.getFolder(null);
+
+        // Then
+        assertThat(folder).hasSize(1);
+        assertThat(folder).contains(new CachedDocumentInfo(fileId, null, false, "new-name"));
+    }
+
+    @Test
+    void onCompleteWithErrorRestoreOldDocuments() {
+        // Given
+        RemarkableClient client = mock(RemarkableClient.class);
+
+        UUID existingFileId = UUID.randomUUID();
+        repository.save(new CachedDocumentInfo(existingFileId, null, false, "old-name"));
+        RemarkableService service = new RemarkableService(client, repository);
+        assertThat(service.getFolder(null)).hasSize(1); // ensure existing file is in db.
+
+        when(client.readFileTree(any(), any())).thenAnswer(invocation -> {
+            BiConsumer<UUID, String> fileConsumer = invocation.getArgument(0, BiConsumer.class);
+            String fileContent =
+                    mapper.writeValueAsString(metadataBuilder.setVisibleName("new-name").setParent(null).create());
+            fileConsumer.accept(UUID.randomUUID(), fileContent);
+
+            Consumer<ConnectionException> completionHandler = invocation.getArgument(1,
+                    Consumer.class);
+
+            completionHandler.accept(new ConnectionException("unit test error", null));
+
+            return RemarkableStatus.AVAILABLE;
+        });
+
+        // When
+        service.refreshFileTree();
+        List<CachedDocumentInfo> folder = service.getFolder(null);
+
+        // Then
+        assertThat(folder).hasSize(1);
+        assertThat(folder).contains(new CachedDocumentInfo(existingFileId, null, false, "old-name"
+        ));
     }
 }

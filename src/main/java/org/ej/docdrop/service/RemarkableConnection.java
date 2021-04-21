@@ -24,7 +24,7 @@ class RemarkableConnection {
 
         sshClient = new SSHClient();
         sshClient.loadKnownHosts();
-        sshClient.setConnectTimeout(100);
+        sshClient.setConnectTimeout(200);
     }
 
     private void connect() throws ConnectionException {
@@ -33,7 +33,7 @@ class RemarkableConnection {
         }
 
         try {
-            sshClient.connect("192.168.2.6");
+            sshClient.connect("192.168.2.2");
         } catch (IOException e) {
             throw new ConnectionException("Trouble connecting to Remarkable", e);
         }

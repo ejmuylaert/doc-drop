@@ -22,7 +22,11 @@
     <tr th:each="doc : ${documents}">
 
         <td>
-            <a th:href="|/browse/${doc.parentId}|" th:text="${doc.name}">open folder ...</a>
+
+            <a th:if="${doc.isFolder}" th:href="|/browse/${doc.id}|" th:text="${doc.name}">
+                open folder ...
+            </a>
+            <span th:unless="${doc.isFolder}" th:text="${doc.name}">file name ...</span>
         </td>
     </tr>
     </tbody>
