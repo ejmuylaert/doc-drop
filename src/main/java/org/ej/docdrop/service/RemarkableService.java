@@ -41,7 +41,7 @@ public class RemarkableService {
     }
 
     public List<CachedDocumentInfo> getFolder(UUID parentId) {
-        return repository.findByParentId(parentId);
+        return repository.folderWithParent(parentId);
     }
 
     public void refreshFileTree() {

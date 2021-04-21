@@ -13,7 +13,11 @@ import java.util.UUID;
 @Repository
 public interface CachedDocumentInfoRepository extends CrudRepository<CachedDocumentInfo, UUID> {
 
-    List<CachedDocumentInfo> findByParentId(UUID parentId);
+    default List<CachedDocumentInfo> folderWithParent(UUID parentId) {
+        return findByParentIdOrderByIsFolderDescNameAsc(parentId);
+    }
+
+    List<CachedDocumentInfo> findByParentIdOrderByIsFolderDescNameAsc(UUID parentId);
 
     @Modifying
     @Transactional
