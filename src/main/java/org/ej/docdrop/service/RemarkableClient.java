@@ -1,9 +1,14 @@
 package org.ej.docdrop.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.ej.docdrop.domain.DocumentType;
+import org.ej.docdrop.domain.RemarkableMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,13 +29,15 @@ public class RemarkableClient {
     private final static Logger log = LoggerFactory.getLogger(RemarkableClient.class);
 
     private final RemarkableConnection connection;
+    private final Clock clock;
 
     private final StampedLock connectionLock = new StampedLock();
     private final ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-    public RemarkableClient(RemarkableConnection connection) {
+    public RemarkableClient(RemarkableConnection connection, Clock clock) {
 
         this.connection = connection;
+        this.clock = clock;
     }
 
     /**
@@ -74,6 +81,29 @@ public class RemarkableClient {
         });
 
         return RemarkableStatus.AVAILABLE;
+    }
+
+    void createFolder(UUID id, String name) {
+        // TODO: abstract get connection
+        try {
+            connection.writeNewFile(id + ".content", "{}");
+        } catch (ConnectionException e) {
+            e.printStackTrace();
+        }
+
+        RemarkableMetadata metadata = new RemarkableMetadata(false, clock.instant(), 0,
+                false, false, null, false, false,
+                DocumentType.FOLDER, 1, name);
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            String s = mapper.writeValueAsString(metadata);
+            connection.writeNewFile(id.toString() + ".metadata", s);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        } catch (ConnectionException e) {
+            e.printStackTrace();
+        }
+
     }
 
     private static String baseName(String fileName) {

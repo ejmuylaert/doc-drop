@@ -27,6 +27,7 @@
                 open folder ...
             </a>
             <span th:unless="${doc.isFolder}" th:text="${doc.name}">file name ...</span>
+            <i th:text="${doc.id}">uuid</i>
         </td>
     </tr>
     </tbody>

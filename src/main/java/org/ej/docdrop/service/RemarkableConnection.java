@@ -1,6 +1,7 @@
 package org.ej.docdrop.service;
 
 import net.schmizz.sshj.SSHClient;
+import net.schmizz.sshj.sftp.OpenMode;
 import net.schmizz.sshj.sftp.RemoteFile;
 import net.schmizz.sshj.sftp.RemoteResourceInfo;
 import net.schmizz.sshj.sftp.SFTPClient;
@@ -11,6 +12,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Abstracts avoid lots of mocking, boundary with external system.
@@ -19,6 +22,7 @@ import java.util.List;
 class RemarkableConnection {
 
     private final SSHClient sshClient;
+    private SFTPClient sftpClient;
 
     public RemarkableConnection() throws IOException {
 
@@ -40,24 +44,27 @@ class RemarkableConnection {
 
         try {
             sshClient.authPassword("root", "ZjZQdup7xQ");
+            connectSftp();
         } catch (UserAuthException e) {
             throw new ConnectionException("Failed to authenticate", e);
         } catch (TransportException e) {
             throw new ConnectionException("Trouble with connection during authentication", e);
+        }
+    }
+
+    private void connectSftp() throws ConnectionException {
+        if (sftpClient == null) {
+            try {
+                sftpClient = sshClient.newSFTPClient();
+            } catch (IOException e) {
+                throw new ConnectionException("Error creating sftp client", e);
+            }
         }
     }
 
     List<RemoteResourceInfo> readFileTree() throws ConnectionException {
         connect();
 
-
-        SFTPClient sftpClient;
-        try {
-            sftpClient = sshClient.newSFTPClient();
-        } catch (IOException e) {
-            throw new ConnectionException("Trouble creating SFTP client", e);
-        }
-
         List<RemoteResourceInfo> listing;
         try {
             listing = sftpClient.ls(
@@ -67,70 +74,12 @@ class RemarkableConnection {
             throw new ConnectionException("Trouble listing files", e);
         }
 
-        // Should throw from this point, or just ignore / log?
-        try {
-            sftpClient.close();
-        } catch (IOException e) {
-            throw new ConnectionException("Error during closing of sftClient", e);
-        }
-
-        return listing;
-    }
-
-    List<RemoteResourceInfo> readFileTree2() throws ConnectionException {
-        final SSHClient sshClient = new SSHClient();
-        sshClient.setConnectTimeout(100);
-
-
-        try {
-            sshClient.loadKnownHosts();
-        } catch (IOException e) {
-            throw new ConnectionException("Trouble loading known hosts", e);
-        }
-
-        try {
-            sshClient.connect("192.168.2.6");
-        } catch (IOException e) {
-            throw new ConnectionException("Trouble connecting to Remarkable", e);
-        }
-
-        try {
-            sshClient.authPassword("root", "ZjZQdup7xQ");
-        } catch (UserAuthException e) {
-            throw new ConnectionException("Failed to authenticate", e);
-        } catch (TransportException e) {
-            throw new ConnectionException("Trouble with connection during authentication", e);
-        }
-
-        SFTPClient sftpClient;
-        try {
-            sftpClient = sshClient.newSFTPClient();
-        } catch (IOException e) {
-            throw new ConnectionException("Trouble creating SFTP client", e);
-        }
-
-        List<RemoteResourceInfo> listing;
-        try {
-            listing = sftpClient.ls(
-                    "/home/root/.local/share/remarkable/xochitl",
-                    resource -> resource.getName().endsWith("metadata"));
-        } catch (IOException e) {
-            throw new ConnectionException("Trouble listing files", e);
-        }
-
-        // Should throw from this point, or just ignore / log?
-        try {
-            sftpClient.close();
-        } catch (IOException e) {
-            throw new ConnectionException("Error during closing of sftClient", e);
-        }
-
-        try {
-            sshClient.close();
-        } catch (IOException e) {
-            throw new ConnectionException("Error closing ssh connection", e);
-        }
-
+//        // Should throw from this point, or just ignore / log?
+//        try {
+//            sftpClient.close();
+//        } catch (IOException e) {
+//            throw new ConnectionException("Error during closing of sftClient", e);
+//        }
 
         return listing;
     }
@@ -138,13 +87,6 @@ class RemarkableConnection {
     String readFile(String path) throws ConnectionException {
         connect();
 
-        SFTPClient sftpClient;
-        try {
-            sftpClient = sshClient.newSFTPClient();
-        } catch (IOException e) {
-            throw new ConnectionException("Trouble creating SFTP client", e);
-        }
-
         RemoteFile file;
         try {
             file = sftpClient.open(path);
@@ -174,29 +116,11 @@ class RemarkableConnection {
         return new String(contents, StandardCharsets.UTF_8);
     }
 
-    String readFile2(String path) throws ConnectionException {
-        final SSHClient sshClient = new SSHClient();
-        sshClient.setConnectTimeout(100);
-        try {
-            sshClient.loadKnownHosts();
-        } catch (IOException e) {
-            throw new ConnectionException("Trouble loading known hosts", e);
-        }
+    void writeNewFile(String name, String content) throws ConnectionException {
 
-        try {
-            sshClient.connect("192.168.2.6");
-        } catch (IOException e) {
-            throw new ConnectionException("Trouble connecting to Remarkable", e);
-        }
+    }
 
-        try {
-            sshClient.authPassword("root", "ZjZQdup7xQ");
-        } catch (UserAuthException e) {
-            throw new ConnectionException("Failed to authenticate", e);
-        } catch (TransportException e) {
-            throw new ConnectionException("Trouble with connection during authentication", e);
-        }
-
+    void createDirectory(UUID id, String name) throws ConnectionException {
         SFTPClient sftpClient;
         try {
             sftpClient = sshClient.newSFTPClient();
@@ -206,30 +130,13 @@ class RemarkableConnection {
 
         RemoteFile file;
         try {
-            file = sftpClient.open(path);
+            file = sftpClient.open(id.toString(), Set.of(OpenMode.CREAT, OpenMode.EXCL,
+                    OpenMode.WRITE));
         } catch (IOException e) {
-            throw new ConnectionException("Error opening file: " + path, e);
+            throw new ConnectionException("Error creating file (for directory)", e);
         }
 
-        int length = 0;
-        try {
-            length = (int) file.length();
-        } catch (IOException e) {
-            throw new ConnectionException("Error determining length of: " + file, e);
-        }
-        byte[] contents = new byte[length];
-        try {
-            file.read(0, contents, 0, length);
-        } catch (IOException e) {
-            throw new ConnectionException("Error reading file: " + file, e);
-        }
-
-        try {
-            file.close();
-        } catch (IOException e) {
-            throw new ConnectionException("Error closing file: " + file, e);
-        }
-
-        return new String(contents, StandardCharsets.UTF_8);
+//        file.write();
+//        file.close();
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ej.docdrop.domain.CachedDocumentInfo;
 import org.ej.docdrop.domain.DocumentType;
+import org.ej.docdrop.domain.RemarkableCommand;
 import org.ej.docdrop.domain.RemarkableMetadata;
 import org.ej.docdrop.repository.CachedDocumentInfoRepository;
 import org.slf4j.Logger;
@@ -60,6 +61,10 @@ public class RemarkableService {
                 repository.setRecentStatus(true);
             }
         });
+    }
+
+    private void processPendingCommands(List<RemarkableCommand> commands) {
+
     }
 
     private void persistInfo(UUID fileId, String metadata) {

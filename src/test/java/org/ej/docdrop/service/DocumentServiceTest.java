@@ -1,8 +1,13 @@
 package org.ej.docdrop.service;
 
 import org.ej.docdrop.AbstractDatabaseTest;
+import org.ej.docdrop.domain.CreateFolderCommand;
 import org.ej.docdrop.domain.Document;
+import org.ej.docdrop.domain.File;
+import org.ej.docdrop.domain.RemarkableCommand;
 import org.ej.docdrop.repository.DocumentRepository;
+import org.ej.docdrop.repository.FileRepository;
+import org.ej.docdrop.repository.RemarkableCommandRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -28,15 +33,20 @@ import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTest
 class DocumentServiceTest extends AbstractDatabaseTest {
 
     private final DocumentRepository repository;
+    private final FileRepository fileRepository;
     private final DocumentService service;
 
     @TempDir
     static Path storagePath;
     private Path uploadPath;
 
-    public DocumentServiceTest(@Autowired DocumentRepository repository) {
+    public DocumentServiceTest(@Autowired DocumentRepository repository,
+                               @Autowired FileRepository fileRepository,
+                               @Autowired RemarkableCommandRepository commandRepository) {
         this.repository = repository;
-        this.service = new DocumentService(storagePath.getParent().toString(), repository);
+        this.fileRepository = fileRepository;
+        this.service = new DocumentService(storagePath.getParent().toString(), fileRepository,
+                commandRepository, repository);
     }
 
     @BeforeEach
@@ -95,5 +105,36 @@ class DocumentServiceTest extends AbstractDatabaseTest {
 
         assertThat(document.getOriginalName()).isEqualTo("original filename");
         assertThat(document.getName()).isNull();
+    }
+
+    @Test
+    void createdFolderWillBeReturnedByFileService() {
+        // When
+        service.createFolder("unit test folder", null);
+
+        // Then
+        Iterable<File> files = service.files(null);
+
+        assertThat(files).hasSize(1);
+        File file = files.iterator().next();
+        assertThat(file.getName()).isEqualTo("unit test folder");
+        assertThat(file.isFolder()).isTrue();
+        assertThat(file.getParentId()).isNull();
+    }
+
+    @Test
+    void creatingFolderWillAlsoCreateRemarkableCommand() {
+        // When
+        service.createFolder("unit test folder", null);
+
+        // Then
+        Iterable<RemarkableCommand> commands = service.getPendingCommands();
+
+        assertThat(commands).hasSize(1);
+        RemarkableCommand command = commands.iterator().next();
+        assertThat(command).isInstanceOf(CreateFolderCommand.class);
+
+        CreateFolderCommand createFolderCommand = (CreateFolderCommand) command;
+        assertThat(createFolderCommand.getName()).isEqualTo("unit test folder");
     }
 }
