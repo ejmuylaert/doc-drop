@@ -2,10 +2,13 @@ package org.ej.docdrop.domain;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Table;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-public class File {
+@Table(name = "file")
+public class FileInfo {
 
     @Id
     private final UUID id;
@@ -13,14 +16,14 @@ public class File {
     private final boolean isFolder;
     private final String name;
 
-    protected File() {
+    protected FileInfo() {
         this.id = null;
         this.parentId = null;
         this.isFolder = false;
         this.name = null;
     }
 
-    public File(UUID id, UUID parentId, boolean isFolder, String name) {
+    public FileInfo(UUID id, UUID parentId, boolean isFolder, String name) {
         this.id = id;
         this.parentId = parentId;
         this.isFolder = isFolder;
@@ -41,5 +44,18 @@ public class File {
 
     public String getName() {
         return name;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FileInfo fileInfo = (FileInfo) o;
+        return isFolder == fileInfo.isFolder && Objects.equals(id, fileInfo.id) && Objects.equals(parentId, fileInfo.parentId) && Objects.equals(name, fileInfo.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, parentId, isFolder, name);
     }
 }

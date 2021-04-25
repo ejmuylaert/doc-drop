@@ -7,4 +7,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface RemarkableCommandRepository extends CrudRepository<RemarkableCommand,
         RemarkableCommand.CommandId> {
+
+    Iterable<RemarkableCommand> findAllByOrderByCommandNumberAsc();
+
+    RemarkableCommand findFirstByOrderByCommandNumberDesc();
 }

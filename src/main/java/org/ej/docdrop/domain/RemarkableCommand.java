@@ -28,6 +28,18 @@ public abstract class RemarkableCommand {
         this.applied = false;
     }
 
+    public UUID getFileId() {
+        return fileId;
+    }
+
+    public long getCommandNumber() {
+        return commandNumber;
+    }
+
+    public boolean isApplied() {
+        return applied;
+    }
+
     public static class CommandId implements Serializable {
         private final UUID fileId;
         private final long commandNumber;

@@ -3,10 +3,10 @@ package org.ej.docdrop.service;
 import org.ej.docdrop.AbstractDatabaseTest;
 import org.ej.docdrop.domain.CreateFolderCommand;
 import org.ej.docdrop.domain.Document;
-import org.ej.docdrop.domain.File;
+import org.ej.docdrop.domain.FileInfo;
 import org.ej.docdrop.domain.RemarkableCommand;
 import org.ej.docdrop.repository.DocumentRepository;
-import org.ej.docdrop.repository.FileRepository;
+import org.ej.docdrop.repository.FileInfoRepository;
 import org.ej.docdrop.repository.RemarkableCommandRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTest
 class DocumentServiceTest extends AbstractDatabaseTest {
 
     private final DocumentRepository repository;
-    private final FileRepository fileRepository;
+    private final FileInfoRepository fileRepository;
     private final DocumentService service;
 
     @TempDir
@@ -41,7 +41,7 @@ class DocumentServiceTest extends AbstractDatabaseTest {
     private Path uploadPath;
 
     public DocumentServiceTest(@Autowired DocumentRepository repository,
-                               @Autowired FileRepository fileRepository,
+                               @Autowired FileInfoRepository fileRepository,
                                @Autowired RemarkableCommandRepository commandRepository) {
         this.repository = repository;
         this.fileRepository = fileRepository;
@@ -113,13 +113,13 @@ class DocumentServiceTest extends AbstractDatabaseTest {
         service.createFolder("unit test folder", null);
 
         // Then
-        Iterable<File> files = service.files(null);
+        Iterable<FileInfo> files = service.files(null);
 
         assertThat(files).hasSize(1);
-        File file = files.iterator().next();
-        assertThat(file.getName()).isEqualTo("unit test folder");
-        assertThat(file.isFolder()).isTrue();
-        assertThat(file.getParentId()).isNull();
+        FileInfo fileInfo = files.iterator().next();
+        assertThat(fileInfo.getName()).isEqualTo("unit test folder");
+        assertThat(fileInfo.isFolder()).isTrue();
+        assertThat(fileInfo.getParentId()).isNull();
     }
 
     @Test
