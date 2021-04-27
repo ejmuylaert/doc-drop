@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 
 @Service
 public class FileService {
@@ -51,12 +52,8 @@ public class FileService {
             throw new RuntimeException("Failed to move uploaded file", e);
         }
 
-        long commandNumber = nextCommandNumber();
-        UploadFileCommand command = new UploadFileCommand(info.getId(), commandNumber, name,
-                parentFolderId);
-
         fileInfoRepository.save(info);
-        commandRepository.save(command);
+        saveCommand(number -> new UploadFileCommand(info.getId(), number, name, parentFolderId));
     }
 
     @Transactional
@@ -65,11 +62,7 @@ public class FileService {
 
         FileInfo info = new FileInfo(parentFolderId, true, name);
         fileInfoRepository.save(info);
-
-        long commandNumber = nextCommandNumber();
-        CreateFolderCommand command = new CreateFolderCommand(info.getId(), commandNumber, name,
-                parentFolderId);
-        commandRepository.save(command);
+        saveCommand(number -> new CreateFolderCommand(info.getId(), number, name, parentFolderId));
 
         return info;
     }
@@ -82,8 +75,7 @@ public class FileService {
 
         fileInfo.setName(newName);
         fileInfoRepository.save(fileInfo);
-
-        commandRepository.save(new RenameCommand(fileId, 0, newName));
+        saveCommand(number -> new RenameCommand(fileId, number, newName));
     }
 
     @Transactional
@@ -94,7 +86,7 @@ public class FileService {
         }
 
         fileInfoRepository.deleteById(fileId);
-        commandRepository.save(new DeleteCommand(fileId, 0));
+        saveCommand(number -> new DeleteCommand(fileId, number));
     }
 
     private void assertFolderExist(UUID parentFolderId) {
@@ -106,13 +98,11 @@ public class FileService {
         }
     }
 
-    private long nextCommandNumber() {
+    private void saveCommand(Function<Long, RemarkableCommand> commandCreator) {
         RemarkableCommand lastCommand = commandRepository.findFirstByOrderByCommandNumberDesc();
+        long number = lastCommand == null ? 0 : lastCommand.getCommandNumber() + 1;
 
-        if (lastCommand == null) {
-            return 0;
-        } else {
-            return lastCommand.getCommandNumber() + 1;
-        }
+        RemarkableCommand command = commandCreator.apply(number);
+        commandRepository.save(command);
     }
 }
