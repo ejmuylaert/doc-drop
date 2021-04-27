@@ -38,9 +38,8 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
                                       @Autowired RemarkableCommandRepository commandRepository,
                                       @Autowired FileService service) {
 
-        this.fileInfoRepository = mock(FileInfoRepository.class, delegatesTo(fileInfoRepository));
-        this.commandRepository = mock(RemarkableCommandRepository.class,
-                delegatesTo(commandRepository));
+        this.fileInfoRepository = fileInfoRepository;
+        this.commandRepository = commandRepository;
         this.service = service;
     }
 
@@ -50,6 +49,10 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
         // Given
         FileInfo folder = new FileInfo(null, true, "my folder");
         fileInfoRepository.save(folder);
+
+        SpringBeanMockUtil.mockFieldOnBean(service, FileInfoRepository.class, fileInfoRepository);
+        SpringBeanMockUtil.mockFieldOnBean(service, RemarkableCommandRepository.class,
+                commandRepository);
 
         // When
         FileInfo newFolder = service.createFolder("nested", folder.getId());
@@ -72,13 +75,19 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
         fileInfoRepository.deleteAll();
         commandRepository.deleteAll();
 
+        FileInfoRepository mockFileInfoRepository = mock(FileInfoRepository.class,
+                delegatesTo(fileInfoRepository));
+
         doAnswer(invocation -> {
             throw new RuntimeException("no saving ...");
         })
-                .when(fileInfoRepository)
+                .when(mockFileInfoRepository)
                 .save(any());
 
-        SpringBeanMockUtil.mockFieldOnBean(service, FileInfoRepository.class, fileInfoRepository);
+        SpringBeanMockUtil.mockFieldOnBean(service, FileInfoRepository.class,
+                mockFileInfoRepository);
+        SpringBeanMockUtil.mockFieldOnBean(service, RemarkableCommandRepository.class,
+                commandRepository);
 
         // When
         assertThatThrownBy(() -> service.createFolder("name", null))
@@ -98,14 +107,19 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
         fileInfoRepository.deleteAll();
         commandRepository.deleteAll();
 
+        RemarkableCommandRepository mockCommandRepository = mock(RemarkableCommandRepository.class,
+                delegatesTo(commandRepository));
+
         // Given
         doAnswer(invocation -> {
             throw new RuntimeException("no saving ...");
         })
-                .when(commandRepository)
+                .when(mockCommandRepository)
                 .save(any());
+
+        SpringBeanMockUtil.mockFieldOnBean(service, FileInfoRepository.class, fileInfoRepository);
         SpringBeanMockUtil.mockFieldOnBean(service, RemarkableCommandRepository.class,
-                commandRepository);
+                mockCommandRepository);
 
         // When
         assertThatThrownBy(() -> service.createFolder("throw command", null))
