@@ -58,7 +58,7 @@ public class DocumentService {
      * @param parentId id of the parent folder, or null when folder should be created in root folder
      */
     public void createFolder(String name, UUID parentId) {
-        FileInfo fileInfo = new FileInfo(UUID.randomUUID(), null, true, name);
+        FileInfo fileInfo = new FileInfo(null, true, name);
         CreateFolderCommand command = new CreateFolderCommand(fileInfo.getId(), 0, name, null);
 
         commandRepository.save(command);

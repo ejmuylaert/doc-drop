@@ -16,7 +16,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,7 +48,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
     @DisplayName("stores correct parentId in FileInfo & Command")
     void storeParentId() {
         // Given
-        FileInfo folder = new FileInfo(UUID.randomUUID(), null, true, "my folder");
+        FileInfo folder = new FileInfo(null, true, "my folder");
         fileInfoRepository.save(folder);
 
         // When

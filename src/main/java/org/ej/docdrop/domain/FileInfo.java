@@ -23,8 +23,8 @@ public class FileInfo {
         this.name = null;
     }
 
-    public FileInfo(UUID id, UUID parentId, boolean isFolder, String name) {
-        this.id = id;
+    public FileInfo(UUID parentId, boolean isFolder, String name) {
+        this.id = UUID.randomUUID();
         this.parentId = parentId;
         this.isFolder = isFolder;
         this.name = name;
