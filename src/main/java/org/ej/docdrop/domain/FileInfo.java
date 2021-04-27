@@ -14,7 +14,7 @@ public class FileInfo {
     private final UUID id;
     private final UUID parentId;
     private final boolean isFolder;
-    private final String name;
+    private String name;
 
     protected FileInfo() {
         this.id = null;
@@ -44,6 +44,10 @@ public class FileInfo {
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     @Override

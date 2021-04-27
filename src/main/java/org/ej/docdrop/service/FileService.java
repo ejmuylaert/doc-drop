@@ -1,9 +1,6 @@
 package org.ej.docdrop.service;
 
-import org.ej.docdrop.domain.CreateFolderCommand;
-import org.ej.docdrop.domain.FileInfo;
-import org.ej.docdrop.domain.RemarkableCommand;
-import org.ej.docdrop.domain.UploadFileCommand;
+import org.ej.docdrop.domain.*;
 import org.ej.docdrop.repository.FileInfoRepository;
 import org.ej.docdrop.repository.RemarkableCommandRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -77,7 +74,16 @@ public class FileService {
         return info;
     }
 
-    void renameFile(UUID fileId, String newName) {
+    @Transactional
+    public void renameFile(UUID fileId, String newName) {
+        FileInfo fileInfo = fileInfoRepository
+                .findById(fileId)
+                .orElseThrow(() -> new RuntimeException("Original file not found"));
+
+        fileInfo.setName(newName);
+        fileInfoRepository.save(fileInfo);
+
+        commandRepository.save(new RenameCommand(fileId, 0, newName));
     }
 
     void removeFile(UUID fileId) {

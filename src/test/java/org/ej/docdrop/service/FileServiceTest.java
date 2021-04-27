@@ -1,10 +1,7 @@
 package org.ej.docdrop.service;
 
 import org.ej.docdrop.AbstractDatabaseTest;
-import org.ej.docdrop.domain.CreateFolderCommand;
-import org.ej.docdrop.domain.FileInfo;
-import org.ej.docdrop.domain.RemarkableCommand;
-import org.ej.docdrop.domain.UploadFileCommand;
+import org.ej.docdrop.domain.*;
 import org.ej.docdrop.repository.FileInfoRepository;
 import org.ej.docdrop.repository.RemarkableCommandRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -286,6 +283,62 @@ class FileServiceTest extends AbstractDatabaseTest {
             // When, Then
             assertThatThrownBy(() -> service.addFile("the name", testFile, UUID.randomUUID()))
                     .isInstanceOf(RuntimeException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Rename file")
+    class RenameFile {
+
+        @Test
+        @DisplayName("Rename the file")
+        void renameFile() {
+            // Given
+            FileInfo existingFile = new FileInfo(null, false, "first name");
+            fileInfoRepository.save(existingFile);
+
+            // When
+            service.renameFile(existingFile.getId(), "new name");
+            List<FileInfo> folderContents = service.folder(null);
+
+            // Then
+            assertThat(folderContents).hasSize(1);
+
+            FileInfo info = folderContents.get(0);
+            assertThat(info.getId()).isEqualTo(existingFile.getId());
+            assertThat(info.getName()).isEqualTo("new name");
+        }
+
+        @Test
+        @DisplayName("Create command when renaming")
+        void createCommand() {
+            // Given
+            FileInfo existingFile = new FileInfo(null, false, "first name");
+            fileInfoRepository.save(existingFile);
+
+            // When
+            service.renameFile(existingFile.getId(), "new name");
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            // Then
+            assertThat(commands).hasSize(1);
+            RenameCommand command = (RenameCommand) commands.iterator().next();
+            assertThat(command.getNewName()).isEqualTo("new name");
+        }
+
+        @Test
+        @DisplayName("Throw error when original file doesn't exist")
+        void throwErrorWhenFileDoesNotExist() {
+            // When
+            assertThatThrownBy(() -> service.renameFile(UUID.randomUUID(), "not possible"))
+                    .isInstanceOf(Throwable.class);
+
+            // Then
+            List<FileInfo> files = service.folder(null);
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            assertThat(files).hasSize(0);
+            assertThat(commands).hasSize(0);
         }
     }
 }

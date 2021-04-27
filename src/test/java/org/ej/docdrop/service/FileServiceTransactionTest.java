@@ -169,6 +169,53 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
         }
     }
 
+    @Nested
+    @DisplayName("Rename file transactional behaviour")
+    class RenameFile {
+
+        @Test
+        @DisplayName("when file saving fails, no command saved")
+        void failingInfoSave() {
+            // Given
+            FileInfo original = new FileInfo(null, false, "original");
+            fileInfoRepository.save(original);
+
+            setupFailingInfoSave();
+
+            // When
+            assertThatThrownBy(() -> service.renameFile(original.getId(), "name"))
+                    .isInstanceOf(Throwable.class);
+            List<FileInfo> folderContents = service.folder(null);
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            // Then
+            assertThat(folderContents).hasSize(1);
+            assertThat(folderContents.get(0).getName()).isEqualTo("original");
+            assertThat(commands).hasSize(0);
+        }
+
+        @Test
+        @DisplayName("when command saving fails, no file is saved")
+        void failingCommandSave() {
+            // Given
+            FileInfo original = new FileInfo(null, false, "original");
+            fileInfoRepository.save(original);
+
+            setupFailingCommandSave();
+
+            // When
+            assertThatThrownBy(() -> service.renameFile(original.getId(), "name"))
+                    .isInstanceOf(Throwable.class);
+            List<FileInfo> folderContents = service.folder(null);
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            // Then
+            assertThat(folderContents).hasSize(1);
+            assertThat(folderContents.get(0).getName()).isEqualTo("original");
+            assertThat(commands).hasSize(0);
+        }
+    }
+
     private void setupFailingInfoSave() {
         FileInfoRepository mockFileInfoRepository = mock(FileInfoRepository.class,
                 delegatesTo(fileInfoRepository));
