@@ -59,7 +59,7 @@ public class DocumentService {
      */
     public void createFolder(String name, UUID parentId) {
         FileInfo fileInfo = new FileInfo(UUID.randomUUID(), null, true, name);
-        CreateFolderCommand command = new CreateFolderCommand(fileInfo.getId(), 0, name);
+        CreateFolderCommand command = new CreateFolderCommand(fileInfo.getId(), 0, name, null);
 
         commandRepository.save(command);
 

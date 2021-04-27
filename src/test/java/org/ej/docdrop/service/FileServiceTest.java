@@ -12,12 +12,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.Mockito.mock;
 import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace.NONE;
 
 @DataJpaTest
@@ -25,6 +30,7 @@ import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTest
 @TestPropertySource(properties = {
         "spring.jpa.hibernate.ddl-auto=validate"
 })
+@Import(FileService.class)
 class FileServiceTest extends AbstractDatabaseTest {
 
     private final FileInfoRepository fileInfoRepository;
@@ -32,12 +38,14 @@ class FileServiceTest extends AbstractDatabaseTest {
     private final FileService service;
 
     public FileServiceTest(@Autowired FileInfoRepository fileInfoRepository,
-                           @Autowired RemarkableCommandRepository commandRepository) {
+                           @Autowired RemarkableCommandRepository commandRepository,
+                           @Autowired FileService service) {
 
-        this.fileInfoRepository = fileInfoRepository;
-        this.commandRepository = commandRepository;
+        this.fileInfoRepository = mock(FileInfoRepository.class, delegatesTo(fileInfoRepository));
+        this.commandRepository = mock(RemarkableCommandRepository.class,
+                delegatesTo(commandRepository));
 
-        this.service = new FileService(fileInfoRepository, commandRepository);
+        this.service = service;
     }
 
     @Nested
@@ -65,9 +73,7 @@ class FileServiceTest extends AbstractDatabaseTest {
 
             // Then
             assertThat(commands).hasSize(1);
-            // TOD: create proper equals for CreateFolderCommand
-//            assertThat(commands.iterator().next()).isEqualTo(
-//                    new CreateFolderCommand(folder.getId(), 0, "new folder"));
+
             CreateFolderCommand command = (CreateFolderCommand) commands.iterator().next();
             assertThat(command.getFileId()).isEqualTo(folder.getId());
             assertThat(command.getCommandNumber()).isEqualTo(0);
@@ -95,39 +101,62 @@ class FileServiceTest extends AbstractDatabaseTest {
             assertThat(second.getName()).isEqualTo("second");
         }
 
-        @Test
-        @DisplayName("fails if parentId is not a folder")
-        void failIfParentIsNoFolder() {
-        }
 
         @Test
         @DisplayName("stores correct parentId in FileInfo & Command")
         void storeParentId() {
-        }
-    }
+            // Given
+            FileInfo folder = new FileInfo(UUID.randomUUID(), null, true, "my folder");
+            fileInfoRepository.save(folder);
 
-    @Nested
-    @DisplayName("FileInfo <-> RemarkableCommand transactions")
-    class Transactions {
+            // When
+            FileInfo newFolder = service.createFolder("nested", folder.getId());
+            List<FileInfo> contents = service.folder(folder.getId());
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            // Then
+            assertThat(newFolder.getParentId()).isEqualTo(folder.getId());
+            assertThat(contents).hasSize(1);
+            assertThat(commands).hasSize(1);
+
+            CreateFolderCommand command = (CreateFolderCommand) commands.iterator().next();
+            assertThat(command.getName()).isEqualTo("nested");
+            assertThat(command.getParentId()).isEqualTo(folder.getId());
+
+
+        }
 
         @Test
-        @DisplayName("when FileInfo saving fails, no command is created")
-        void noCommandWhenNoFileInfo() {
+        @DisplayName("fails if parentId doesn't exist")
+        void failIfParentDoesNotExist() {
+            // When, Then
+            assertThatThrownBy(() -> service.createFolder("child", UUID.randomUUID()))
+                    .isInstanceOf(RuntimeException.class);
+
+            // Then
+            List<FileInfo> folder = service.folder(null);
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            assertThat(folder).hasSize(0);
+            assertThat(commands).hasSize(0);
         }
 
         @Test
-        @DisplayName("when command save fails, no FileInfo is created")
-        void noFileInfoWhenNoCommand() {
-        }
+        @DisplayName("fails if parentId is not a folder")
+        void failIfParentIsNoFolder() {
+            // Given
+            FileInfo file = new FileInfo(UUID.randomUUID(), null, false, "my file");
+            fileInfoRepository.save(file);
 
-        @Test
-        @DisplayName("serialize saving, so order remains")
-        void retainOrdering() {
-        }
+            // When, Then
+            assertThatThrownBy(() -> service.createFolder("child", file.getId()))
+                    .isInstanceOf(RuntimeException.class);
 
-        @Test
-        @DisplayName("when createFolderFails, deleteFolder also fails")
-        void checksAreDoneWithinTransaction() {
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            assertThat(commands).hasSize(0);
+
+            Iterable<FileInfo> allFiles = fileInfoRepository.findAll();
+            assertThat(allFiles).hasSize(1);
         }
     }
 }

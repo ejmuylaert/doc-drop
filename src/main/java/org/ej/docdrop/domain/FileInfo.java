@@ -47,6 +47,16 @@ public class FileInfo {
     }
 
     @Override
+    public String toString() {
+        return "FileInfo{" +
+                "id=" + id +
+                ", parentId=" + parentId +
+                ", isFolder=" + isFolder +
+                ", name='" + name + '\'' +
+                '}';
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

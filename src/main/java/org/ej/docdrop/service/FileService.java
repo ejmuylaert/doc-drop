@@ -6,6 +6,7 @@ import org.ej.docdrop.domain.RemarkableCommand;
 import org.ej.docdrop.repository.FileInfoRepository;
 import org.ej.docdrop.repository.RemarkableCommandRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -35,13 +36,22 @@ public class FileService {
     void addFile(String name, Path filePath, UUID parentFolder) {
     }
 
-    FileInfo createFolder(String name, UUID parentFolder) {
-        FileInfo info = new FileInfo(UUID.randomUUID(), parentFolder, true, name);
+    @Transactional
+    public FileInfo createFolder(String name, UUID parentFolderId) {
+        if (parentFolderId != null) {
+            // When not in the root folder, check if parent exists and is a folder
+            fileInfoRepository.findById(parentFolderId)
+                    .filter(FileInfo::isFolder)
+                    .orElseThrow(() -> new RuntimeException("Parent folder doesn't exist, id: " + parentFolderId));
+        }
+
+        FileInfo info = new FileInfo(UUID.randomUUID(), parentFolderId, true, name);
         fileInfoRepository.save(info);
 
         RemarkableCommand lastCommand = commandRepository.findFirstByOrderByCommandNumberDesc();
         long commandNumber = lastCommand == null ? 0 : lastCommand.getCommandNumber() + 1;
-        CreateFolderCommand command = new CreateFolderCommand(info.getId(), commandNumber, name);
+        CreateFolderCommand command = new CreateFolderCommand(info.getId(), commandNumber, name,
+                parentFolderId);
         commandRepository.save(command);
 
         return info;

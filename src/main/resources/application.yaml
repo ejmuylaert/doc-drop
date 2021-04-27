@@ -8,3 +8,11 @@ spring.mvc:
 
 upload:
   path: "./upload"
+
+spring:
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    org.springframework.transaction: TRACE
