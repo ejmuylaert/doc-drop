@@ -341,4 +341,78 @@ class FileServiceTest extends AbstractDatabaseTest {
             assertThat(commands).hasSize(0);
         }
     }
+
+    @Nested
+    @DisplayName("Delete")
+    class Delete {
+        @Test
+        @DisplayName("Delete the file")
+        void deleteFile() {
+            // Given
+            FileInfo existingFile = new FileInfo(null, false, "file");
+            fileInfoRepository.save(existingFile);
+
+            // When
+            service.removeFile(existingFile.getId());
+            List<FileInfo> files = service.folder(null);
+
+            // Then
+            assertThat(files).hasSize(0);
+        }
+
+        @Test
+        @DisplayName("Deletes also creates command")
+        void createCommand() {
+            // Given
+            FileInfo existingFile = new FileInfo(null, false, "file");
+            fileInfoRepository.save(existingFile);
+
+            // When
+            service.removeFile(existingFile.getId());
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            // Thenb
+            assertThat(commands).hasSize(1);
+            assertThat(commands.iterator().next()).isInstanceOf(DeleteCommand.class);
+            assertThat(commands.iterator().next().getFileId()).isEqualTo(existingFile.getId());
+        }
+
+        @Test
+        @DisplayName("Delete folder")
+        void deleteFolder() {
+            // Given
+            FileInfo existingFolder = new FileInfo(null, true, "folder");
+            fileInfoRepository.save(existingFolder);
+
+            // When
+            service.removeFile(existingFolder.getId());
+            List<FileInfo> files = service.folder(null);
+
+            // Then
+            assertThat(files).hasSize(0);
+        }
+
+        @Test
+        @DisplayName("Throws error when file doesn't exist")
+        void throwWhenNotExist() {
+            assertThatThrownBy(() -> service.removeFile(UUID.randomUUID()));
+        }
+
+        @Test
+        @DisplayName("Throws error when folder is not empty")
+        void throwWhenFolderNotEmpty() {
+            // Given
+            FileInfo existingFolder = new FileInfo(null, true, "folder");
+            fileInfoRepository.save(existingFolder);
+            FileInfo existingFile = new FileInfo(existingFolder.getId(), true, "file");
+            fileInfoRepository.save(existingFile);
+
+            // When
+            assertThatThrownBy(() -> service.removeFile(existingFolder.getId()));
+            List<FileInfo> files = service.folder(existingFolder.getId());
+
+            // Then
+            assertThat(files).hasSize(1);
+        }
+    }
 }

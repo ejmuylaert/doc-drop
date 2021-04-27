@@ -86,7 +86,15 @@ public class FileService {
         commandRepository.save(new RenameCommand(fileId, 0, newName));
     }
 
-    void removeFile(UUID fileId) {
+    @Transactional
+    public void removeFile(UUID fileId) {
+        List<FileInfo> files = fileInfoRepository.getFileInfoByParentId(fileId);
+        if (files.size() > 0) {
+            throw new RuntimeException("Folder not empty");
+        }
+
+        fileInfoRepository.deleteById(fileId);
+        commandRepository.save(new DeleteCommand(fileId, 0));
     }
 
     private void assertFolderExist(UUID parentFolderId) {

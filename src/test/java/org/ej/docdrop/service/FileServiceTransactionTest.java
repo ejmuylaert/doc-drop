@@ -216,6 +216,53 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
         }
     }
 
+    @Nested
+    @DisplayName("Delete transactional behaviour")
+    class Delete {
+
+        @Test
+        @DisplayName("when file deleting fails, no command saved")
+        void failingInfoToDelete() {
+            // Given
+            FileInfo original = new FileInfo(null, false, "original");
+            fileInfoRepository.save(original);
+
+            setupFailingInfoDelete();
+
+            // When
+            assertThatThrownBy(() -> service.removeFile(original.getId()))
+                    .isInstanceOf(Throwable.class);
+            List<FileInfo> folderContents = service.folder(null);
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            // Then
+            assertThat(folderContents).hasSize(1);
+            assertThat(folderContents.get(0).getName()).isEqualTo("original");
+            assertThat(commands).hasSize(0);
+        }
+
+        @Test
+        @DisplayName("when command saving fails, no file is deleted")
+        void failingCommandSave() {
+            // Given
+            FileInfo original = new FileInfo(null, false, "original");
+            fileInfoRepository.save(original);
+
+            setupFailingCommandSave();
+
+            // When
+            assertThatThrownBy(() -> service.removeFile(original.getId()))
+                    .isInstanceOf(Throwable.class);
+            List<FileInfo> folderContents = service.folder(null);
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            // Then
+            assertThat(folderContents).hasSize(1);
+            assertThat(folderContents.get(0).getName()).isEqualTo("original");
+            assertThat(commands).hasSize(0);
+        }
+    }
+
     private void setupFailingInfoSave() {
         FileInfoRepository mockFileInfoRepository = mock(FileInfoRepository.class,
                 delegatesTo(fileInfoRepository));
@@ -225,6 +272,22 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
         })
                 .when(mockFileInfoRepository)
                 .save(any());
+
+        SpringBeanMockUtil.mockFieldOnBean(service, FileInfoRepository.class,
+                mockFileInfoRepository);
+        SpringBeanMockUtil.mockFieldOnBean(service, RemarkableCommandRepository.class,
+                commandRepository);
+    }
+
+    private void setupFailingInfoDelete() {
+        FileInfoRepository mockFileInfoRepository = mock(FileInfoRepository.class,
+                delegatesTo(fileInfoRepository));
+
+        doAnswer(invocation -> {
+            throw new RuntimeException("no deleting ...");
+        })
+                .when(mockFileInfoRepository)
+                .deleteById(any());
 
         SpringBeanMockUtil.mockFieldOnBean(service, FileInfoRepository.class,
                 mockFileInfoRepository);
