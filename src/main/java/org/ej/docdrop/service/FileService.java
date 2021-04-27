@@ -41,7 +41,8 @@ public class FileService {
         return commandRepository.findAllByOrderByCommandNumberAsc();
     }
 
-    void addFile(String name, Path filePath, UUID parentFolderId) {
+    @Transactional
+    public void addFile(String name, Path filePath, UUID parentFolderId) {
         assertFolderExist(parentFolderId);
 
         FileInfo info = new FileInfo(parentFolderId, false, name);

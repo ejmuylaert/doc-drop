@@ -6,8 +6,11 @@ import org.ej.docdrop.domain.FileInfo;
 import org.ej.docdrop.domain.RemarkableCommand;
 import org.ej.docdrop.repository.FileInfoRepository;
 import org.ej.docdrop.repository.RemarkableCommandRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +18,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +40,9 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
     private final RemarkableCommandRepository commandRepository;
     private final FileService service;
 
+    @TempDir
+    static Path uploadPath;
+
     public FileServiceTransactionTest(@Autowired FileInfoRepository fileInfoRepository,
                                       @Autowired RemarkableCommandRepository commandRepository,
                                       @Autowired FileService service) {
@@ -43,16 +52,22 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
         this.service = service;
     }
 
+    @BeforeEach
+    void cleanDatabase() {
+        fileInfoRepository.deleteAll();
+        commandRepository.deleteAll();
+    }
+
     @Test
     @DisplayName("stores correct parentId in FileInfo & Command")
     void storeParentId() {
         // Given
-        FileInfo folder = new FileInfo(null, true, "my folder");
-        fileInfoRepository.save(folder);
-
         SpringBeanMockUtil.mockFieldOnBean(service, FileInfoRepository.class, fileInfoRepository);
         SpringBeanMockUtil.mockFieldOnBean(service, RemarkableCommandRepository.class,
                 commandRepository);
+
+        FileInfo folder = new FileInfo(null, true, "my folder");
+        fileInfoRepository.save(folder);
 
         // When
         FileInfo newFolder = service.createFolder("nested", folder.getId());
@@ -69,12 +84,92 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
         assertThat(command.getParentId()).isEqualTo(folder.getId());
     }
 
-    @Test
-    @DisplayName("when FileInfo saving fails, no command is created")
-    void noCommandWhenNoFileInfo() {
-        fileInfoRepository.deleteAll();
-        commandRepository.deleteAll();
+    @Nested
+    @DisplayName("Create folder transactional behaviour")
+    class CreateFolder {
+        @Test
+        @DisplayName("when FileInfo saving fails, no command is created")
+        void noCommandWhenNoFileInfo() {
+            // Given
+            setupFailingInfoSave();
 
+            // When
+            assertThatThrownBy(() -> service.createFolder("name", null))
+                    .isInstanceOf(Throwable.class);
+
+            List<FileInfo> folderContents = service.folder(null);
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            // Then
+            assertThat(folderContents).hasSize(0);
+            assertThat(commands).hasSize(0);
+        }
+
+        @Test
+        @DisplayName("when command save fails, no FileInfo is created")
+        void noFileInfoWhenNoCommand() {
+            // Given
+            setupFailingCommandSave();
+
+            // When
+            assertThatThrownBy(() -> service.createFolder("throw command", null))
+                    .isInstanceOf(Throwable.class);
+
+            List<FileInfo> folderContents = service.folder(null);
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            // Then
+            assertThat(folderContents).hasSize(0);
+            assertThat(commands).hasSize(0);
+        }
+    }
+
+    @Nested
+    @DisplayName("Add file transactional behaviour")
+    class AddFile {
+
+        @Test
+        @DisplayName("when file saving fails, no command saved")
+        void failingInfoSave() throws IOException {
+            // Given
+            setupFailingInfoSave();
+
+            Path testFile = uploadPath.resolve("my-ut-test-file");
+            Files.writeString(testFile, "unit test file contents ...");
+
+            // When
+            assertThatThrownBy(() -> service.addFile("the name", testFile, null))
+                    .isInstanceOf(Throwable.class);
+            List<FileInfo> folderContents = service.folder(null);
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            // Then
+            assertThat(folderContents).hasSize(0);
+            assertThat(commands).hasSize(0);
+        }
+
+        @Test
+        @DisplayName("when command saving fails, no file saved")
+        void failingCommandSave() throws IOException {
+            // Given
+            setupFailingCommandSave();
+
+            Path testFile = uploadPath.resolve("my-ut-test-file");
+            Files.writeString(testFile, "unit test file contents ...");
+
+            // When
+            assertThatThrownBy(() -> service.addFile("the name", testFile, null))
+                    .isInstanceOf(Throwable.class);
+            List<FileInfo> folderContents = service.folder(null);
+            Iterable<RemarkableCommand> commands = service.pendingCommands();
+
+            // Then
+            assertThat(folderContents).hasSize(0);
+            assertThat(commands).hasSize(0);
+        }
+    }
+
+    private void setupFailingInfoSave() {
         FileInfoRepository mockFileInfoRepository = mock(FileInfoRepository.class,
                 delegatesTo(fileInfoRepository));
 
@@ -88,29 +183,12 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
                 mockFileInfoRepository);
         SpringBeanMockUtil.mockFieldOnBean(service, RemarkableCommandRepository.class,
                 commandRepository);
-
-        // When
-        assertThatThrownBy(() -> service.createFolder("name", null))
-                .isInstanceOf(Throwable.class);
-
-        List<FileInfo> folderContents = service.folder(null);
-        Iterable<RemarkableCommand> commands = service.pendingCommands();
-
-        // Then
-        assertThat(folderContents).hasSize(0);
-        assertThat(commands).hasSize(0);
     }
 
-    @Test
-    @DisplayName("when command save fails, no FileInfo is created")
-    void noFileInfoWhenNoCommand() {
-        fileInfoRepository.deleteAll();
-        commandRepository.deleteAll();
-
+    private void setupFailingCommandSave() {
         RemarkableCommandRepository mockCommandRepository = mock(RemarkableCommandRepository.class,
                 delegatesTo(commandRepository));
 
-        // Given
         doAnswer(invocation -> {
             throw new RuntimeException("no saving ...");
         })
@@ -120,17 +198,6 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
         SpringBeanMockUtil.mockFieldOnBean(service, FileInfoRepository.class, fileInfoRepository);
         SpringBeanMockUtil.mockFieldOnBean(service, RemarkableCommandRepository.class,
                 mockCommandRepository);
-
-        // When
-        assertThatThrownBy(() -> service.createFolder("throw command", null))
-                .isInstanceOf(Throwable.class);
-
-        List<FileInfo> folderContents = service.folder(null);
-        Iterable<RemarkableCommand> commands = service.pendingCommands();
-
-        // Then
-        assertThat(folderContents).hasSize(0);
-        assertThat(commands).hasSize(0);
     }
 }
 
