@@ -11,8 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 
 @Service
@@ -31,7 +30,7 @@ public class FileService {
         this.storageDirectory = Paths.get(storageDirectory);
     }
 
-    List<FileInfo> folder(UUID parentId) {
+    public List<FileInfo> folder(UUID parentId) {
         return fileInfoRepository.getFileInfoByParentId(parentId);
     }
 
@@ -104,5 +103,20 @@ public class FileService {
 
         RemarkableCommand command = commandCreator.apply(number);
         commandRepository.save(command);
+    }
+
+    public List<FileInfo> folderPath(UUID folderId) {
+        List<FileInfo> path = new ArrayList<>();
+
+        Optional<FileInfo> folder;
+        while (folderId != null) {
+            folder = fileInfoRepository.findById(folderId);
+
+            folder.ifPresent(path::add);
+            folderId = folder.map(FileInfo::getParentId).orElse(null);
+        }
+
+        Collections.reverse(path);
+        return path;
     }
 }

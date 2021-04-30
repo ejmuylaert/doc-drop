@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DocDrop</title>
+
+    <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.0.0-beta3/css/bootstrap.min.css}"/>
+</head>
+<body>
+
+<!-- Create folder "|/browse/${file.id}|" -->
+<form method="post"
+      th:action="${create_folder_url}">
+    <div class="form-group row">
+        <label for="name" class="col-sm-1 col-form-label">File</label>
+        <div class="col-sm-3">
+            <input type="text" name="name" id=name class="form-control"/>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-1"></div>
+        <div class="col-sm-3">
+            <button type="submit" class="btn btn-primary">Create folder</button>
+        </div>
+    </div>
+</form>
+
+<!-- Upload file -->
+<form method="post" th:action="${upload_url}" enctype="multipart/form-data">
+    <p th:text="${error}" th:if="${error ne null}"></p>
+    <div class="form-group row">
+        <label for="file" class="col-sm-1 col-form-label">File</label>
+        <div class="col-sm-3">
+            <input type="file" name="file" id="file" class="form-control"/>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-1"></div>
+        <div class="col-sm-3">
+            <button type="submit" class="btn btn-primary">Upload Document</button>
+        </div>
+    </div>
+</form>
+
+<!-- Bread crumb -->
+<span>
+    <a href="/files">root</a>
+    <span th:each="folder : ${path}">
+        / <a th:href="|/files/${folder.id}|" th:text="${folder.name}"> folder </a>
+    </span>
+</span>
+
+<!-- File browser -->
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th scope="col">Name</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="file : ${files}">
+        <td>
+            <a th:if="${file.isFolder}" th:href="|/files/${file.id}|" th:text="${file.name}">
+                open folder ...
+            </a>
+            <span th:unless="${file.isFolder}" th:text="${file.name}">file name ...</span>
+            <i th:text="${file.id}">uuid</i>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+</body>
+</html>

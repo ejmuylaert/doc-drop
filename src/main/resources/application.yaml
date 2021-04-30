@@ -9,6 +9,9 @@ spring.mvc:
 upload:
   path: "./upload"
 
+storage:
+  path: "./upload"
+
 spring:
   jpa:
     show-sql: true

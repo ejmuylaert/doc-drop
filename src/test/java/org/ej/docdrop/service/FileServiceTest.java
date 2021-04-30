@@ -61,6 +61,56 @@ class FileServiceTest extends AbstractDatabaseTest {
     }
 
     @Nested
+    @DisplayName("Get folder path")
+    class FolderPath {
+
+        @Test
+        @DisplayName("is empty on root folder")
+        void rootFolder() {
+            // When
+            List<FileInfo> path = service.folderPath(null);
+
+            // Then
+            assertThat(path).isEmpty();
+        }
+
+        @Test
+        @DisplayName("only the folder, if that folder is within root")
+        void justTheFolder() {
+            // Given
+            FileInfo folder = new FileInfo(null, true, "name");
+            fileInfoRepository.save(folder);
+
+            // When
+            List<FileInfo> path = service.folderPath(folder.getId());
+
+            // Then
+            assertThat(path).hasSize(1);
+            assertThat(path.get(0).getName()).isEqualTo("name");
+        }
+
+        @Test
+        @DisplayName("list of folders, starting with the top one")
+        void listOfFolders() {
+            // Given
+            FileInfo inRoot = new FileInfo(null, true, "in root");
+            FileInfo nested = new FileInfo(inRoot.getId(), true, "nested");
+            FileInfo nestedNested = new FileInfo(nested.getId(), true, "deeply nested");
+            fileInfoRepository.save(inRoot);
+            fileInfoRepository.save(nested);
+            fileInfoRepository.save(nestedNested);
+
+            // When
+            List<FileInfo> path = service.folderPath(nestedNested.getId());
+
+            // Then
+            assertThat(path).hasSize(3);
+            List<String> names = path.stream().map(FileInfo::getName).toList();
+            assertThat(names).containsExactly("in root", "nested", "deeply nested");
+        }
+    }
+
+    @Nested
     @DisplayName("Creating folder")
     class CreateFolder {
 
