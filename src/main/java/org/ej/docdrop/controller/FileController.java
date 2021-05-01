@@ -91,4 +91,19 @@ public class FileController {
 
         return redirectView;
     }
+
+    @PostMapping("/delete")
+    RedirectView delete(@RequestParam("fileId") UUID fileId, RedirectAttributes attributes) {
+
+        FileInfo fileInfo = service.removeFile(fileId);
+
+        attributes.addFlashAttribute("delete_message", fileInfo.getName() + " deleted");
+        String id = fileInfo.getParentId() == null ? "" : fileInfo.getParentId().toString();
+        attributes.addAttribute("parentId", id);
+
+        RedirectView redirectView = new RedirectView();
+        redirectView.setUrl("/files/{parentId}");
+
+        return redirectView;
+    }
 }

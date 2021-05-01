@@ -189,4 +189,59 @@ class FileControllerTest {
                     .andExpect(flash().attribute("upload_message", containsString("uploaded")));
         }
     }
+
+    @Nested
+    @DisplayName("Deleting")
+    class Delete {
+
+        @Test
+        @DisplayName("Deletes file and sets feedback message")
+        void deleteFile() throws Exception {
+            // Given
+            FileInfo file = new FileInfo(null, false, "file-name");
+            UUID fileId = file.getId();
+            when(service.removeFile(fileId)).thenReturn(file);
+
+            // When, Then
+            mockMvc.perform(post("/files/delete")
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .param("fileId", fileId.toString()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(flash().attribute("delete_message", containsString("deleted")))
+                    .andExpect(flash().attribute("delete_message", containsString("file-name")));
+        }
+
+        @Test
+        @DisplayName("Redirect to parent directory")
+        void redirectToParent() throws Exception {
+            // Given
+            UUID parentId = UUID.randomUUID();
+            FileInfo file = new FileInfo(parentId, false, "file-name");
+            UUID fileId = file.getId();
+            when(service.removeFile(fileId)).thenReturn(file);
+
+            // When, Then
+            mockMvc.perform(post("/files/delete")
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .param("fileId", fileId.toString()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlTemplate("/files/{parentId}", parentId));
+        }
+
+        @Test
+        @DisplayName("Redirect to root when file has no parent")
+        void redirectToRoot() throws Exception {
+            // Given
+            FileInfo file = new FileInfo(null, false, "file-name");
+            UUID fileId = file.getId();
+            when(service.removeFile(fileId)).thenReturn(file);
+
+            // When, Then
+            mockMvc.perform(post("/files/delete")
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .param("fileId", fileId.toString()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlTemplate("/files/"));
+        }
+    }
 }

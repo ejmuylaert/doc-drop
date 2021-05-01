@@ -78,14 +78,20 @@ public class FileService {
     }
 
     @Transactional
-    public void removeFile(UUID fileId) {
+    public FileInfo removeFile(UUID fileId) {
         List<FileInfo> files = fileInfoRepository.getFileInfoByParentId(fileId);
         if (files.size() > 0) {
             throw new RuntimeException("Folder not empty");
         }
 
+        FileInfo file = fileInfoRepository
+                .findById(fileId)
+                .orElseThrow(() -> new RuntimeException("Could not find file with id: " + fileId));
+
         fileInfoRepository.deleteById(fileId);
         saveCommand(number -> new DeleteCommand(fileId, number));
+
+        return file;
     }
 
     private void assertFolderExist(UUID parentFolderId) {
