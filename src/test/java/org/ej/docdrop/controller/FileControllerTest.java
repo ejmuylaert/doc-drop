@@ -1,5 +1,6 @@
 package org.ej.docdrop.controller;
 
+import org.ej.docdrop.domain.FileInfo;
 import org.ej.docdrop.service.FileService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,12 +20,13 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = {FileController.class})
 class FileControllerTest {
@@ -41,6 +43,10 @@ class FileControllerTest {
         @Test
         @DisplayName("Create folder")
         void createFolder() throws Exception {
+            // Given
+            FileInfo newFolder = new FileInfo(null, true, "my folder");
+            when(service.createFolder(any(String.class), any())).thenReturn(newFolder);
+
             // When, Then
             mockMvc.perform(post("/files/create_folder")
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -55,6 +61,8 @@ class FileControllerTest {
         void createFolderWithinFolder() throws Exception {
             // Given
             UUID parentId = UUID.randomUUID();
+            FileInfo newFolder = new FileInfo(null, true, "my folder");
+            when(service.createFolder(any(String.class), any())).thenReturn(newFolder);
 
             // When, Then
             mockMvc.perform(post("/files/create_folder/{parentId}", parentId)
@@ -63,6 +71,23 @@ class FileControllerTest {
                     .andExpect(flash().attribute("folder_message", containsString("created")));
 
             verify(service).createFolder("my folder", parentId);
+        }
+
+        @Test
+        @DisplayName("Redirect should go to created folder")
+        void redirectToCurrent() throws Exception {
+            // Given
+            UUID parentId = UUID.randomUUID();
+            FileInfo newFolder = new FileInfo(parentId, true, "my folder");
+            when(service.createFolder(any(String.class), eq(parentId))).thenReturn(newFolder);
+
+            // When, Then
+            mockMvc.perform(post("/files/create_folder/{parentId}", parentId)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .param("name", "my folder"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlTemplate("/files/{parentId}", newFolder.getId()))
+                    .andExpect(flash().attribute("folder_message", containsString("created")));
         }
 
         @Test
@@ -79,6 +104,10 @@ class FileControllerTest {
         @Test
         @DisplayName("Strip spaces around name")
         void stripSpaces() throws Exception {
+            // Given
+            FileInfo newFolder = new FileInfo(null, true, "my folder");
+            when(service.createFolder(any(String.class), any())).thenReturn(newFolder);
+
             // When, Then
             mockMvc.perform(post("/files/create_folder")
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -142,6 +171,21 @@ class FileControllerTest {
                     eq(folderId));
             String contents = Files.readString(pathArgumentCaptor.getValue());
             assertThat(contents).isEqualTo("dummy document");
+        }
+
+        @Test
+        @DisplayName("Stays in the current folder")
+        void stayInCurrentFolder() throws Exception {
+            // Given
+            UUID folderId = UUID.randomUUID();
+            MockMultipartFile dummyFile = new MockMultipartFile("file", "original_filename", null,
+                    "dummy document".getBytes(StandardCharsets.UTF_8));
+
+            // When, Then
+            mockMvc.perform(multipart("/files/upload/{folderId}", folderId).file(dummyFile))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlTemplate("/files/{parentId}", folderId))
+                    .andExpect(flash().attribute("message", containsString("uploaded")));
         }
     }
 }

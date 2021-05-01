@@ -7,6 +7,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.view.RedirectView;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -43,30 +44,43 @@ public class FileController {
     }
 
     @PostMapping(value = {"/create_folder", "/create_folder/{parentId}"})
-    String createFolder(@PathVariable("parentId") Optional<UUID> parentId,
-                        @RequestParam String name,
-                        RedirectAttributes attributes) {
+    RedirectView createFolder(@PathVariable("parentId") Optional<UUID> parentId,
+                              @RequestParam String name,
+                              RedirectAttributes attributes) {
+
+        RedirectView redirectView = new RedirectView();
+        redirectView.setUrl("/files/{parentId}");
 
         name = name.trim();
         if (name.isEmpty()) {
+            String id = parentId.map(UUID::toString).orElse("");
+            attributes.addAttribute("parentId", id);
             attributes.addFlashAttribute("error_directory", "Name cannot be empty");
-            return "redirect:/files";
+
+            return redirectView;
         }
+        FileInfo folder = service.createFolder(name, parentId.orElse(null));
 
+        attributes.addAttribute("parentId", folder.getId());
         attributes.addFlashAttribute("folder_message", "Directory created");
-        service.createFolder(name, parentId.orElse(null));
 
-        return "redirect:/files";
+        return redirectView;
     }
 
     @PostMapping(value = {"/upload", "/upload/{parentId}"})
-    String upload(@PathVariable("parentId") Optional<UUID> parentId,
-                  @RequestParam("file") MultipartFile file,
-                  RedirectAttributes attributes) throws IOException {
+    RedirectView upload(@PathVariable("parentId") Optional<UUID> parentId,
+                        @RequestParam("file") MultipartFile file,
+                        RedirectAttributes attributes) throws IOException {
+
+        RedirectView redirectView = new RedirectView();
+        redirectView.setUrl("/files/{parentId}");
+        String id = parentId.map(UUID::toString).orElse("");
+        attributes.addAttribute("parentId", id);
 
         if (file.isEmpty()) {
             attributes.addFlashAttribute("error", "Please select a file ...");
-            return "redirect:/files";
+
+            return redirectView;
         }
 
         Path tempFile = Files.createTempFile("docdrop_", null);
@@ -75,6 +89,6 @@ public class FileController {
 
         attributes.addFlashAttribute("message", "File uploaded ...");
 
-        return "redirect:/files";
+        return redirectView;
     }
 }
