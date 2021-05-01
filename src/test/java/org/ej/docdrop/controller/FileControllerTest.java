@@ -98,7 +98,7 @@ class FileControllerTest {
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .param("name", ""))
                     .andExpect(status().is3xxRedirection())
-                    .andExpect(flash().attribute("error_directory", containsString("empty")));
+                    .andExpect(flash().attribute("folder_error", containsString("empty")));
         }
 
         @Test
@@ -130,7 +130,8 @@ class FileControllerTest {
 
             // When, Then
             mockMvc.perform(multipart("/files/upload").file(emptyFile).param("filename", ""))
-                    .andExpect(status().is3xxRedirection()).andExpect(flash().attribute("error",
+                    .andExpect(status().is3xxRedirection()).andExpect(flash().attribute(
+                    "upload_error",
                     containsString("file")));
         }
 
@@ -144,7 +145,7 @@ class FileControllerTest {
             // When, Then
             mockMvc.perform(multipart("/files/upload").file(dummyFile))
                     .andExpect(status().is3xxRedirection())
-                    .andExpect(flash().attribute("message", containsString("uploaded")));
+                    .andExpect(flash().attribute("upload_message", containsString("uploaded")));
 
             ArgumentCaptor<Path> pathArgumentCaptor = ArgumentCaptor.forClass(Path.class);
             verify(service).addFile(eq("original_filename"), pathArgumentCaptor.capture(),
@@ -164,7 +165,7 @@ class FileControllerTest {
             // When, Then
             mockMvc.perform(multipart("/files/upload/{folderId}", folderId).file(dummyFile))
                     .andExpect(status().is3xxRedirection())
-                    .andExpect(flash().attribute("message", containsString("uploaded")));
+                    .andExpect(flash().attribute("upload_message", containsString("uploaded")));
 
             ArgumentCaptor<Path> pathArgumentCaptor = ArgumentCaptor.forClass(Path.class);
             verify(service).addFile(eq("original_filename"), pathArgumentCaptor.capture(),
@@ -185,7 +186,7 @@ class FileControllerTest {
             mockMvc.perform(multipart("/files/upload/{folderId}", folderId).file(dummyFile))
                     .andExpect(status().is3xxRedirection())
                     .andExpect(redirectedUrlTemplate("/files/{parentId}", folderId))
-                    .andExpect(flash().attribute("message", containsString("uploaded")));
+                    .andExpect(flash().attribute("upload_message", containsString("uploaded")));
         }
     }
 }

@@ -55,7 +55,7 @@ public class FileController {
         if (name.isEmpty()) {
             String id = parentId.map(UUID::toString).orElse("");
             attributes.addAttribute("parentId", id);
-            attributes.addFlashAttribute("error_directory", "Name cannot be empty");
+            attributes.addFlashAttribute("folder_error", "Name cannot be empty");
 
             return redirectView;
         }
@@ -78,7 +78,7 @@ public class FileController {
         attributes.addAttribute("parentId", id);
 
         if (file.isEmpty()) {
-            attributes.addFlashAttribute("error", "Please select a file ...");
+            attributes.addFlashAttribute("upload_error", "Please select a file ...");
 
             return redirectView;
         }
@@ -87,7 +87,7 @@ public class FileController {
         file.transferTo(tempFile);
         service.addFile(file.getOriginalFilename(), tempFile, parentId.orElse(null));
 
-        attributes.addFlashAttribute("message", "File uploaded ...");
+        attributes.addFlashAttribute("upload_message", "File uploaded ...");
 
         return redirectView;
     }

@@ -20,8 +20,17 @@
 
     <div class="form-group row">
         <div class="col-sm-1"></div>
-        <div class="col-sm-3">
+        <!-- give it the alert class, so enough room for feedback (alert) message -->
+        <div class="col-sm-3 alert">
             <button type="submit" class="btn btn-primary">Create folder</button>
+            <span th:text="${folder_error}" th:if="${folder_error ne null}"
+                  class="alert alert-warning">
+                Error
+            </span>
+            <span th:text="${folder_message}" th:if="${folder_message ne null}"
+                  class="alert alert-success">
+                Success
+            </span>
         </div>
     </div>
 </form>
@@ -38,8 +47,17 @@
 
     <div class="form-group row">
         <div class="col-sm-1"></div>
-        <div class="col-sm-3">
+        <!-- give it the alert class, so enough room for feedback (alert) message -->
+        <div class="col-sm-3 alert">
             <button type="submit" class="btn btn-primary">Upload Document</button>
+            <span th:text="${upload_error}" th:if="${upload_error ne null}"
+                  class="alert alert-warning">
+                Error
+            </span>
+            <span th:text="${upload_message}" th:if="${upload_message ne null}"
+                  class="alert alert-success">
+                Success
+            </span>
         </div>
     </div>
 </form>
