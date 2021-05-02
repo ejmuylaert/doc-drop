@@ -2,6 +2,10 @@ package org.ej.docdrop.controller;
 
 import org.ej.docdrop.domain.FileInfo;
 import org.ej.docdrop.service.FileService;
+import org.ej.docdrop.service.ThumbnailException;
+import org.ej.docdrop.service.ThumbnailService;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -20,16 +24,18 @@ import java.util.UUID;
 @RequestMapping("/files")
 public class FileController {
 
-    private final FileService service;
+    private final FileService fileService;
+    private final ThumbnailService thumbnailService;
 
-    public FileController(FileService service) {
-        this.service = service;
+    public FileController(FileService fileService, ThumbnailService thumbnailService) {
+        this.fileService = fileService;
+        this.thumbnailService = thumbnailService;
     }
 
     @GetMapping(value = {"", "{folderId}"})
     String index(@PathVariable Optional<UUID> folderId, Model model) {
-        List<FileInfo> files = service.folder(folderId.orElse(null));
-        List<FileInfo> path = service.folderPath(folderId.orElse(null));
+        List<FileInfo> files = fileService.folder(folderId.orElse(null));
+        List<FileInfo> path = fileService.folderPath(folderId.orElse(null));
 
         model.addAttribute("create_folder_url",
                 "/files/create_folder" + folderId.map(id -> "/" + id).orElse(""));
@@ -59,7 +65,7 @@ public class FileController {
 
             return redirectView;
         }
-        FileInfo folder = service.createFolder(name, parentId.orElse(null));
+        FileInfo folder = fileService.createFolder(name, parentId.orElse(null));
 
         attributes.addAttribute("parentId", folder.getId());
         attributes.addFlashAttribute("folder_message", "Directory created");
@@ -85,17 +91,51 @@ public class FileController {
 
         Path tempFile = Files.createTempFile("docdrop_", null);
         file.transferTo(tempFile);
-        service.addFile(file.getOriginalFilename(), tempFile, parentId.orElse(null));
 
-        attributes.addFlashAttribute("upload_message", "File uploaded ...");
+        try {
+            Path thumbnail = thumbnailService.createThumbnail(tempFile);
+
+            fileService.addFile(file.getOriginalFilename(), tempFile, thumbnail,
+                    parentId.orElse(null));
+            attributes.addFlashAttribute("upload_message", "File uploaded ...");
+
+        } catch (ThumbnailException e) {
+            attributes.addFlashAttribute("upload_error", e.getMessage());
+        }
 
         return redirectView;
+    }
+
+    @GetMapping("/download/{fileId}")
+    ResponseEntity<FileSystemResource> download(@PathVariable("fileId") UUID fileId) {
+        FileInfo file = fileService.getFile(fileId);
+
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.setContentType(MediaType.APPLICATION_PDF);
+        responseHeaders.setContentDisposition(
+                ContentDisposition.attachment().filename(file.getName()).build());
+
+        Path documentFilePath = fileService.filePathForId(fileId);
+
+        return new ResponseEntity<>(new FileSystemResource(documentFilePath), responseHeaders,
+                HttpStatus.OK);
+    }
+
+    @GetMapping("/download/{fileId}/thumbnail")
+    ResponseEntity<FileSystemResource> thumbnail(@PathVariable("fileId") UUID fileId) {
+        Path documentFilePath = fileService.thumbnailFor(fileId);
+
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.setContentType(MediaType.IMAGE_JPEG);
+
+        return new ResponseEntity<>(new FileSystemResource(documentFilePath), responseHeaders,
+                HttpStatus.OK);
     }
 
     @PostMapping("/delete")
     RedirectView delete(@RequestParam("fileId") UUID fileId, RedirectAttributes attributes) {
 
-        FileInfo fileInfo = service.removeFile(fileId);
+        FileInfo fileInfo = fileService.removeFile(fileId);
 
         attributes.addFlashAttribute("delete_message", fileInfo.getName() + " deleted");
         String id = fileInfo.getParentId() == null ? "" : fileInfo.getParentId().toString();

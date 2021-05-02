@@ -136,9 +136,11 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
 
             Path testFile = uploadPath.resolve("my-ut-test-file");
             Files.writeString(testFile, "unit test file contents ...");
+            Path thumbnail = uploadPath.resolve("thumbnail");
+            Files.writeString(thumbnail, "unit test file contents ...");
 
             // When
-            assertThatThrownBy(() -> service.addFile("the name", testFile, null))
+            assertThatThrownBy(() -> service.addFile("the name", testFile, thumbnail, null))
                     .isInstanceOf(Throwable.class);
             List<FileInfo> folderContents = service.folder(null);
             Iterable<RemarkableCommand> commands = service.pendingCommands();
@@ -156,9 +158,11 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
 
             Path testFile = uploadPath.resolve("my-ut-test-file");
             Files.writeString(testFile, "unit test file contents ...");
+            Path thumbnail = uploadPath.resolve("thumbnail");
+            Files.writeString(thumbnail, "unit test file contents ...");
 
             // When
-            assertThatThrownBy(() -> service.addFile("the name", testFile, null))
+            assertThatThrownBy(() -> service.addFile("the name", testFile, thumbnail, null))
                     .isInstanceOf(Throwable.class);
             List<FileInfo> folderContents = service.folder(null);
             Iterable<RemarkableCommand> commands = service.pendingCommands();

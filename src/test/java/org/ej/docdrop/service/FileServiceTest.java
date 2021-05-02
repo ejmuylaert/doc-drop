@@ -230,9 +230,11 @@ class FileServiceTest extends AbstractDatabaseTest {
             // Given
             Path testFile = uploadPath.resolve("my-ut-test-file");
             Files.writeString(testFile, "unit test file contents ...");
+            Path thumbnail = uploadPath.resolve("thumbnail");
+            Files.writeString(thumbnail, "unit test file contents ...");
 
             // When
-            service.addFile("the name", testFile, null);
+            service.addFile("the name", testFile, thumbnail, null);
 
             // Then
             FileInfo info = service.folder(null).get(0);
@@ -244,14 +246,37 @@ class FileServiceTest extends AbstractDatabaseTest {
         }
 
         @Test
+        @DisplayName("Move thumbnail to permanent location")
+        void moveThumbnail() throws IOException {
+            // Given
+            Path testFile = uploadPath.resolve("my-ut-test-file");
+            Files.writeString(testFile, "unit test file contents ...");
+            Path thumbnail = uploadPath.resolve("thumbnail");
+            Files.writeString(thumbnail, "unit test file thumbnail ...");
+
+            // When
+            service.addFile("the name", testFile, thumbnail, null);
+
+            // Then
+            FileInfo info = service.folder(null).get(0);
+            Path thumb = storagePath.resolve(info.getId() + ".thumbnail");
+
+            assertThat(Files.exists(thumb)).isTrue();
+            assertThat(thumb).isNotEqualTo(testFile);
+            assertThat(Files.readString(thumb)).isEqualTo("unit test file thumbnail ...");
+        }
+
+        @Test
         @DisplayName("Create command for uploading file")
         void createCommand() throws IOException {
             // Given
             Path testFile = uploadPath.resolve("my-ut-test-file");
             Files.writeString(testFile, "unit test file contents ...");
+            Path thumbnail = uploadPath.resolve("thumbnail");
+            Files.writeString(thumbnail, "unit test file contents ...");
 
             // When
-            service.addFile("the file name", testFile, null);
+            service.addFile("the file name", testFile, thumbnail, null);
             List<FileInfo> contents = service.folder(null);
             Iterable<RemarkableCommand> commands = service.pendingCommands();
 
@@ -272,11 +297,15 @@ class FileServiceTest extends AbstractDatabaseTest {
             Files.writeString(testFile1, "unit test file contents ...");
             Path testFile2 = uploadPath.resolve("my-ut-test-file-2");
             Files.writeString(testFile2, "unit test file contents ...");
+            Path thumbnail1 = uploadPath.resolve("thumbnail-1");
+            Files.writeString(thumbnail1, "unit test file contents ...");
+            Path thumbnail2 = uploadPath.resolve("thumbnail-2");
+            Files.writeString(thumbnail2, "unit test file contents ...");
 
 
             // When
-            service.addFile("first file", testFile1, null);
-            service.addFile("second file", testFile2, null);
+            service.addFile("first file", testFile1, thumbnail1, null);
+            service.addFile("second file", testFile2, thumbnail2, null);
             List<FileInfo> contents = service.folder(null);
             Iterable<RemarkableCommand> commands = service.pendingCommands();
 
@@ -296,9 +325,11 @@ class FileServiceTest extends AbstractDatabaseTest {
             FileInfo folder = service.createFolder("my folder", null);
             Path testFile = uploadPath.resolve("my-ut-test-file");
             Files.writeString(testFile, "unit test file contents ...");
+            Path thumbnail = uploadPath.resolve("thumbnail");
+            Files.writeString(thumbnail, "unit test file contents ...");
 
             // When
-            service.addFile("the file name", testFile, folder.getId());
+            service.addFile("the file name", testFile, thumbnail, folder.getId());
             List<FileInfo> contents = service.folder(folder.getId());
             Iterable<RemarkableCommand> commands = service.pendingCommands();
 
@@ -320,7 +351,7 @@ class FileServiceTest extends AbstractDatabaseTest {
             Path testFile = uploadPath.resolve("my-ut-test-file");
 
             // When, Then
-            assertThatThrownBy(() -> service.addFile("name", testFile, null));
+            assertThatThrownBy(() -> service.addFile("name", testFile, testFile, null));
         }
 
         @Test
@@ -329,10 +360,13 @@ class FileServiceTest extends AbstractDatabaseTest {
             // Given
             Path testFile = uploadPath.resolve("my-ut-test-file");
             Files.writeString(testFile, "unit test file contents ...");
+            Path thumbnail = uploadPath.resolve("thumbnail");
+            Files.writeString(thumbnail, "unit test file contents ...");
 
             // When, Then
-            assertThatThrownBy(() -> service.addFile("the name", testFile, UUID.randomUUID()))
-                    .isInstanceOf(RuntimeException.class);
+            assertThatThrownBy(() ->
+                    service.addFile("the name", testFile, thumbnail, UUID.randomUUID())
+            ).isInstanceOf(RuntimeException.class);
         }
     }
 

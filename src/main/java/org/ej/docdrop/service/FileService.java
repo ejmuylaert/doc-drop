@@ -38,17 +38,31 @@ public class FileService {
         return commandRepository.findAllByOrderByCommandNumberAsc();
     }
 
+    public Path filePathForId(UUID fileId) {
+        return storageDirectory.resolve(fileId.toString());
+    }
+
+    public Path thumbnailFor(UUID fileId) {
+        return storageDirectory.resolve(fileId + ".thumbnail");
+    }
+
+    public FileInfo getFile(UUID fileId) {
+        return fileInfoRepository.findById(fileId).get();
+    }
+
     @Transactional
-    public void addFile(String name, Path filePath, UUID parentFolderId) {
+    public void addFile(String name, Path filePath, Path thumbnailPath, UUID parentFolderId) {
         assertFolderExist(parentFolderId);
 
         FileInfo info = new FileInfo(parentFolderId, false, name);
         Path targetFilePath = storageDirectory.resolve(info.getId().toString());
+        Path targetThumbnailPath = storageDirectory.resolve(info.getId() + ".thumbnail");
 
         try {
             Files.move(filePath, targetFilePath);
+            Files.move(thumbnailPath, targetThumbnailPath);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to move uploaded file", e);
+            throw new RuntimeException("Failed to move uploaded file and/or thumbnail file", e);
         }
 
         fileInfoRepository.save(info);

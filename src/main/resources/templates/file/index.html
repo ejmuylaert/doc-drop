@@ -80,6 +80,7 @@
 <table class="table table-striped">
     <thead>
     <tr>
+        <th scope="col" width="100px"></th>
         <th scope="col">Name</th>
         <th scope="col"></th>
     </tr>
@@ -87,11 +88,19 @@
     <tbody>
     <tr th:each="file : ${files}">
         <td>
+            <span th:unless="${file.isFolder}">
+                <img th:src="|/files/download/${file.id}/thumbnail|" height="100px"/>
+            </span>
+        </td>
+        <td>
             <a th:if="${file.isFolder}" th:href="|/files/${file.id}|" th:text="${file.name}">
                 open folder ...
             </a>
-            <span th:unless="${file.isFolder}" th:text="${file.name}">file name ...</span>
-            <i th:text="${file.id}">uuid</i>
+
+            <a th:unless="${file.isFolder}" th:href="|/files/download/${file.id}|"
+               th:text="${file.name}">
+                Download
+            </a>
         </td>
         <td>
             <form method="post" action="/files/delete" enctype="multipart/form-data">
