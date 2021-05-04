@@ -2,6 +2,7 @@ package org.ej.docdrop.domain;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -14,18 +15,17 @@ public abstract class RemarkableCommand {
     @Id
     private final long commandNumber;
 
-    private final boolean applied;
+    private Instant executionStartedAt;
+    private Instant executedAt;
 
     protected RemarkableCommand() {
         this.fileId = null;
         this.commandNumber = 1;
-        this.applied = false;
     }
 
     public RemarkableCommand(UUID fileId, long commandNumber) {
         this.fileId = fileId;
         this.commandNumber = commandNumber;
-        this.applied = false;
     }
 
     public UUID getFileId() {
@@ -36,8 +36,20 @@ public abstract class RemarkableCommand {
         return commandNumber;
     }
 
-    public boolean isApplied() {
-        return applied;
+    public Instant getExecutionStartedAt() {
+        return executionStartedAt;
+    }
+
+    public void setExecutionStartedAt(Instant executionStartedAt) {
+        this.executionStartedAt = executionStartedAt;
+    }
+
+    public Instant getExecutedAt() {
+        return executedAt;
+    }
+
+    public void setExecutedAt(Instant executedAt) {
+        this.executedAt = executedAt;
     }
 
     public static class CommandId implements Serializable {

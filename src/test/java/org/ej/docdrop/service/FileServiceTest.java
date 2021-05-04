@@ -139,7 +139,6 @@ class FileServiceTest extends AbstractDatabaseTest {
             CreateFolderCommand command = (CreateFolderCommand) commands.iterator().next();
             assertThat(command.getFileId()).isEqualTo(folder.getId());
             assertThat(command.getCommandNumber()).isEqualTo(0);
-            assertThat(command.isApplied()).isFalse();
             assertThat(command.getName()).isEqualTo("new folder");
         }
 
