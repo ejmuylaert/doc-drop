@@ -1,0 +1,57 @@
+package org.ej.docdrop.service;
+
+import org.ej.docdrop.domain.CreateFolderCommand;
+import org.ej.docdrop.domain.SyncEvent;
+import org.ej.docdrop.domain.UploadFileCommand;
+
+import java.nio.file.Path;
+
+import static org.ej.docdrop.domain.SyncEvent.Result.*;
+
+public class SyncCommandHandler {
+
+    private final RemarkableClient client;
+    private final FileStorage storage;
+
+    public SyncCommandHandler(RemarkableClient client, FileStorage storage) {
+        this.client = client;
+        this.storage = storage;
+    }
+
+    public SyncEvent apply(CreateFolderCommand command) {
+        try {
+            if (!client.folderExists(command.getParentId())) {
+                return SyncEvent.create(command, PRE_CONDITION_FAILED, "Parent folder does not exist");
+            }
+            if (client.folderExists(command.getFileId())) {
+                return SyncEvent.create(command, PRE_CONDITION_FAILED, "Folder already exists");
+
+            }
+            client.createFolder(command.getFileId(), command.getName());
+            return SyncEvent.create(command, SUCCESS, "");
+
+        } catch (RemarkableClientException e) {
+            return SyncEvent.create(command, CLIENT_NOT_AVAILABLE, e.getMessage());
+        }
+    }
+
+    public SyncEvent apply(UploadFileCommand command) {
+        try {
+            if (!client.folderExists(command.getParentId())) {
+                return SyncEvent.create(command, PRE_CONDITION_FAILED, "Parent folder does not exists");
+            }
+            if (client.fileExists(command.getFileId())) {
+                return SyncEvent.create(command, PRE_CONDITION_FAILED, "File already exists");
+            }
+
+            Path filePath = storage.getFilePath(command.getFileId());
+            Path thumbnailPath = storage.getThumbnailPath(command.getFileId());
+            client.uploadFile(command.getFileId(), command.getParentId(), command.getName(), filePath, thumbnailPath);
+
+            return SyncEvent.create(command, SUCCESS, "");
+
+        } catch (RemarkableClientException e) {
+            return SyncEvent.create(command, CLIENT_NOT_AVAILABLE, e.getMessage());
+        }
+    }
+}

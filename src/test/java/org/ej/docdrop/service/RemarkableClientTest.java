@@ -28,7 +28,7 @@ class RemarkableClientTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
-    void CreateFolderCreatesTwoFiles() throws ConnectionException, JsonProcessingException {
+    void CreateFolderCreatesTwoFiles() throws ConnectionException, JsonProcessingException, RemarkableClientException {
         // Given
         RemarkableConnection connection = mock(RemarkableConnection.class);
         Clock fixedClock = Clock.fixed(Instant.now(),

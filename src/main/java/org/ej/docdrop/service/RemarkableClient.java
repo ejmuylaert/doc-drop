@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.UUID;
@@ -41,7 +42,11 @@ public class RemarkableClient {
         this.clock = clock;
     }
 
-    public boolean folderExists(UUID id) {
+    public boolean folderExists(UUID id) throws RemarkableClientException {
+        return false;
+    }
+
+    public boolean fileExists(UUID id) throws RemarkableClientException {
         return false;
     }
 
@@ -88,7 +93,7 @@ public class RemarkableClient {
         return RemarkableStatus.AVAILABLE;
     }
 
-    void createFolder(UUID id, String name) {
+    void createFolder(UUID id, String name) throws RemarkableClientException {
         // TODO: abstract get connection
         try {
             connection.writeNewFile(id + ".content", "{}");
@@ -121,7 +126,13 @@ public class RemarkableClient {
         }
     }
 
-    public void uploadFile(UUID fileId, UUID parentId, String name, Path path, Path thumbnailPath) {
+    public void uploadFile(UUID fileId, UUID parentId, String name, Path path, Path thumbnailPath) throws RemarkableClientException {
 
+    }
+}
+
+class RemarkableClientException extends IOException {
+    public RemarkableClientException(String message) {
+        super(message);
     }
 }
