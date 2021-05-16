@@ -1,7 +1,5 @@
 package org.ej.docdrop.domain;
 
-import org.ej.docdrop.service.RemarkableClient;
-
 import javax.persistence.Entity;
 import java.util.UUID;
 
@@ -29,9 +27,5 @@ public class CreateFolderCommand extends RemarkableCommand {
 
     public UUID getParentId() {
         return parentId;
-    }
-
-    public void execute(RemarkableClient client) {
-
     }
 }

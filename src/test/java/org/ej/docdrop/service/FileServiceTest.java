@@ -454,7 +454,7 @@ class FileServiceTest extends AbstractDatabaseTest {
             service.removeFile(existingFile.getId());
             Iterable<RemarkableCommand> commands = service.pendingCommands();
 
-            // Thenb
+            // Then
             assertThat(commands).hasSize(1);
             assertThat(commands.iterator().next()).isInstanceOf(DeleteCommand.class);
             assertThat(commands.iterator().next().getFileId()).isEqualTo(existingFile.getId());

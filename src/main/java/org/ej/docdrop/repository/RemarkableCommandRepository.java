@@ -10,6 +10,13 @@ import java.util.Optional;
 public interface RemarkableCommandRepository extends CrudRepository<RemarkableCommand,
         RemarkableCommand.CommandId> {
 
+    default Iterable<RemarkableCommand> pendingCommands() {
+        return findAllByExecutionStartedAtIsNullAndExecutedAtIsNullOrderByCommandNumberAsc();
+    }
+
+    Iterable<RemarkableCommand> findAllByExecutionStartedAtIsNullAndExecutedAtIsNullOrderByCommandNumberAsc();
+
+
     Iterable<RemarkableCommand> findByExecutionStartedAtIsNotNullAndExecutedAtIsNull();
 
     Optional<RemarkableCommand> findFirstByExecutionStartedAtIsNullAndExecutedAtIsNullOrderByCommandNumberAsc();

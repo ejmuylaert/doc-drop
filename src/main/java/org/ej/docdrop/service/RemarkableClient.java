@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Path;
 import java.time.Clock;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -38,6 +39,10 @@ public class RemarkableClient {
 
         this.connection = connection;
         this.clock = clock;
+    }
+
+    public boolean folderExists(UUID id) {
+        return false;
     }
 
     /**
@@ -114,5 +119,9 @@ public class RemarkableClient {
         } else {
             return fileName.substring(0, i);
         }
+    }
+
+    public void uploadFile(UUID fileId, UUID parentId, String name, Path path, Path thumbnailPath) {
+
     }
 }
