@@ -7,10 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 
@@ -19,7 +16,8 @@ public class FileService {
 
     private final FileInfoRepository fileInfoRepository;
     private final RemarkableCommandRepository commandRepository;
-    private final Path storageDirectory;
+
+    private final FileStorage fileStorage;
 
     public FileService(FileInfoRepository fileInfoRepository,
                        RemarkableCommandRepository commandRepository,
@@ -27,7 +25,8 @@ public class FileService {
 
         this.fileInfoRepository = fileInfoRepository;
         this.commandRepository = commandRepository;
-        this.storageDirectory = Paths.get(storageDirectory);
+
+        this.fileStorage = new FileStorage(storageDirectory);
     }
 
     public List<FileInfo> folder(UUID parentId) {
@@ -39,11 +38,11 @@ public class FileService {
     }
 
     public Path filePathForId(UUID fileId) {
-        return storageDirectory.resolve(fileId.toString());
+        return fileStorage.getFilePath(fileId);
     }
 
     public Path thumbnailFor(UUID fileId) {
-        return storageDirectory.resolve(fileId + ".thumbnail");
+        return fileStorage.getThumbnailPath(fileId);
     }
 
     public FileInfo getFile(UUID fileId) {
@@ -55,13 +54,10 @@ public class FileService {
         assertFolderExist(parentFolderId);
 
         FileInfo info = new FileInfo(parentFolderId, false, name);
-        Path targetFilePath = storageDirectory.resolve(info.getId().toString());
-        Path targetThumbnailPath = storageDirectory.resolve(info.getId() + ".thumbnail");
-
         try {
-            Files.move(filePath, targetFilePath);
-            Files.move(thumbnailPath, targetThumbnailPath);
-        } catch (IOException e) {
+            fileStorage.putFile(info.getId(), filePath);
+            fileStorage.putThumbnail(info.getId(), thumbnailPath);
+        } catch (StorageException e) {
             throw new RuntimeException("Failed to move uploaded file and/or thumbnail file", e);
         }
 
