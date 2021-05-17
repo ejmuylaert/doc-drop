@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,8 +23,8 @@ import java.util.function.Consumer;
 /**
  * The RemarkableClient is responsible for coordinating interaction with the device over SSH.
  * <p>
- * It ensures that only <b>one command at the time</b>œ is being executed. All async functions
- * have a callback which can be used for status updates etc.
+ * It ensures that only <b>one command at the time</b>œ is being executed. All async functions have a callback which can
+ * be used for status updates etc.
  */
 @Component
 public class RemarkableClient {
@@ -32,18 +33,50 @@ public class RemarkableClient {
 
     private final RemarkableConnection connection;
     private final Clock clock;
+    private final ObjectMapper mapper;
 
     private final StampedLock connectionLock = new StampedLock();
     private final ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-    public RemarkableClient(RemarkableConnection connection, Clock clock) {
+    public static final Path BASE_PATH = Path.of("/home/root/.local/share/remarkable/xochitl");
+
+    public RemarkableClient(RemarkableConnection connection, Clock clock, ObjectMapper mapper) {
 
         this.connection = connection;
         this.clock = clock;
+        this.mapper = mapper;
     }
 
-    public boolean folderExists(UUID id) throws RemarkableClientException {
-        return false;
+    /**
+     * Checks if the folder with given id exists on the device by checking the metadata file. Returns false if metadata
+     * not found, or the folder is flagged as deleted in the metadata.
+     *
+     * @param id of the folder
+     * @return true if the folder exits, false otherwise
+     * @throws ConnectionException       when connection with device failed, check can be re-run when connection is
+     *                                   re-established
+     * @throws RemarkableClientException when parsing the metadata failed or the the requested file doesn't represent a
+     *                                   folder. No use in repeating the request without changes on the device.
+     */
+    public boolean folderExists(UUID id) throws ConnectionException, RemarkableClientException {
+        Path filePath = BASE_PATH.resolve(id.toString() + ".metadata");
+        Optional<byte[]> contents = connection.readFile(filePath);
+
+        if (contents.isEmpty()) {
+            return false;
+        }
+
+        try {
+            RemarkableMetadata metadata = mapper.readValue(contents.get(), RemarkableMetadata.class);
+            if (!metadata.getType().equals(DocumentType.FOLDER)) {
+                throw new RemarkableClientException("Request file does not represents a folder, id: " + id
+                        + ", metadata: " + metadata);
+            }
+
+            return !metadata.isDeleted();
+        } catch (IOException e) {
+            throw new RemarkableClientException("Error while parsing json metadata for: " + id, e);
+        }
     }
 
     public boolean fileExists(UUID id) throws RemarkableClientException {
@@ -51,18 +84,16 @@ public class RemarkableClient {
     }
 
     /**
-     * Reads all metadata from the "/home/root/.local/share/remarkable/xochitl" folder on the
-     * Remarkable device, so an overview of documents can be generated.
+     * Reads all metadata from the "/home/root/.local/share/remarkable/xochitl" folder on the Remarkable device, so an
+     * overview of documents can be generated.
      * <p>
-     * If there is already a command in progress, this method doesn't do anything (no queuing of
-     * commands).
+     * If there is already a command in progress, this method doesn't do anything (no queuing of commands).
      *
      * @param fileConsumer invoked with the fileId and metadata for each file
      * @param errorHandler invoked in case there is an underlying SSH error
      * @return BUSY when command is already being executed, else AVAILABLE
      */
-    RemarkableStatus readFileTree(BiConsumer<UUID, String> fileConsumer,
-                                  Consumer<ConnectionException> errorHandler) {
+    RemarkableStatus readFileTree(BiConsumer<UUID, String> fileConsumer, Consumer<ConnectionException> errorHandler) {
 
         final long lockStamp = connectionLock.tryWriteLock();
         if (lockStamp == 0) {
@@ -74,7 +105,7 @@ public class RemarkableClient {
                 connection.readFileTree().forEach(info -> {
                     UUID id = UUID.fromString(baseName(info.getName()));
                     try {
-                        String contents = connection.readFile(info.getPath());
+                        String contents = connection.readFileOld(info.getPath());
                         fileConsumer.accept(id, contents);
                     } catch (ConnectionException e) {
                         e.printStackTrace();
@@ -101,9 +132,8 @@ public class RemarkableClient {
             e.printStackTrace();
         }
 
-        RemarkableMetadata metadata = new RemarkableMetadata(false, clock.instant(), 0,
-                false, false, null, false, false,
-                DocumentType.FOLDER, 1, name);
+        RemarkableMetadata metadata = new RemarkableMetadata(false, clock.instant(), 0, false, false, null, false,
+                false, DocumentType.FOLDER, 1, name);
         ObjectMapper mapper = new ObjectMapper();
         try {
             String s = mapper.writeValueAsString(metadata);
@@ -131,8 +161,18 @@ public class RemarkableClient {
     }
 }
 
-class RemarkableClientException extends IOException {
+/**
+ * Exception thrown in case of a non-recoverable error in RemarkableClient.
+ * <p>
+ * Retrying the method which throws this exception won't succeed when there is no change on, for example the Remarkable
+ * tablet. (e.g. this is thrown when the metadata of a file cannot be parsed).
+ */
+class RemarkableClientException extends Throwable {
     public RemarkableClientException(String message) {
         super(message);
+    }
+
+    public RemarkableClientException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

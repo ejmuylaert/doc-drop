@@ -1,17 +1,18 @@
 package org.ej.docdrop.service;
 
 import net.schmizz.sshj.SSHClient;
-import net.schmizz.sshj.sftp.OpenMode;
-import net.schmizz.sshj.sftp.RemoteFile;
-import net.schmizz.sshj.sftp.RemoteResourceInfo;
-import net.schmizz.sshj.sftp.SFTPClient;
+import net.schmizz.sshj.sftp.*;
 import net.schmizz.sshj.transport.TransportException;
 import net.schmizz.sshj.userauth.UserAuthException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -20,6 +21,8 @@ import java.util.UUID;
  */
 @Component
 class RemarkableConnection {
+
+    private final static Logger log = LoggerFactory.getLogger(RemarkableConnection.class);
 
     private final SSHClient sshClient;
     private SFTPClient sftpClient;
@@ -31,7 +34,7 @@ class RemarkableConnection {
         sshClient.setConnectTimeout(200);
     }
 
-    private void connect() throws ConnectionException {
+    private void ensureConnection() throws ConnectionException {
         if (sshClient.isConnected() && sshClient.isAuthenticated()) {
             return;
         }
@@ -63,7 +66,7 @@ class RemarkableConnection {
     }
 
     List<RemoteResourceInfo> readFileTree() throws ConnectionException {
-        connect();
+        ensureConnection();
 
         List<RemoteResourceInfo> listing;
         try {
@@ -84,8 +87,41 @@ class RemarkableConnection {
         return listing;
     }
 
-    String readFile(String path) throws ConnectionException {
-        connect();
+    Optional<byte[]> readFile(Path path) throws ConnectionException {
+        ensureConnection();
+
+        RemoteFile file = null;
+        try {
+            file = sftpClient.open(path.toString());
+            int fileLength = Math.toIntExact(file.length());
+            byte[] contents = new byte[fileLength];
+            file.read(0, contents, 0, fileLength);
+
+            return Optional.of(contents);
+        } catch (SFTPException e) {
+            if (e.getStatusCode().equals(Response.StatusCode.NO_SUCH_FILE)) {
+                return Optional.empty();
+            } else {
+                log.error("Error opening file: " + path, e);
+                throw new ConnectionException("Error opening file: " + path, e);
+            }
+        } catch (IOException e) {
+            log.error("Error reading file: " + path, e);
+            throw new ConnectionException("Error reading file: " + path, e);
+        } finally {
+            if (file != null) {
+                try {
+                    file.close();
+                } catch (IOException e) {
+                    // No need to rethrow, because contents already read
+                    log.error("Error closing file: " + path, e);
+                }
+            }
+        }
+    }
+
+    String readFileOld(String path) throws ConnectionException {
+        ensureConnection();
 
         RemoteFile file;
         try {
@@ -94,7 +130,7 @@ class RemarkableConnection {
             throw new ConnectionException("Error opening file: " + path, e);
         }
 
-        int length = 0;
+        int length;
         try {
             length = (int) file.length();
         } catch (IOException e) {

@@ -34,7 +34,7 @@ class SyncCommandHandlerTest {
 
         @Test
         @DisplayName("fails when parent directory doesn't exist")
-        void failWithoutParent() throws RemarkableClientException {
+        void failWithoutParent() throws RemarkableClientException, ConnectionException {
             // Given
             CreateFolderCommand command = new CreateFolderCommand(UUID.randomUUID(), 1L, "name", UUID.randomUUID());
 
@@ -50,7 +50,7 @@ class SyncCommandHandlerTest {
 
         @Test
         @DisplayName("fails when folder already exists")
-        void failWhenFolderExists() throws RemarkableClientException {
+        void failWhenFolderExists() throws RemarkableClientException, ConnectionException {
             // Given
             CreateFolderCommand command = new CreateFolderCommand(UUID.randomUUID(), 1L, "name", UUID.randomUUID());
 
@@ -66,7 +66,7 @@ class SyncCommandHandlerTest {
 
         @Test
         @DisplayName("creates the folder when pre-conditions are met")
-        void createFolder() throws RemarkableClientException {
+        void createFolder() throws RemarkableClientException, ConnectionException {
             // Given
             CreateFolderCommand command = new CreateFolderCommand(UUID.randomUUID(), 1L, "name", UUID.randomUUID());
 
@@ -83,11 +83,11 @@ class SyncCommandHandlerTest {
 
         @Test
         @DisplayName("aborts when client connection is available")
-        void abortWhenClientNotAvailable() throws RemarkableClientException {
+        void abortWhenClientNotAvailable() throws RemarkableClientException, ConnectionException {
             // Given
             CreateFolderCommand command = new CreateFolderCommand(UUID.randomUUID(), 1L, "name", UUID.randomUUID());
 
-            when(client.folderExists(command.getParentId())).thenThrow(new RemarkableClientException("Not connected"));
+            when(client.folderExists(command.getParentId())).thenThrow(new ConnectionException("Not connected", null));
             when(client.folderExists(command.getFileId())).thenReturn(false);
 
             // When
@@ -100,7 +100,19 @@ class SyncCommandHandlerTest {
 
         @Test
         @DisplayName("creates failure event when client throw error")
-        void failWhenRemarkableClientFails() {
+        void failWhenRemarkableClientFails() throws RemarkableClientException, ConnectionException {
+            // Given
+            CreateFolderCommand command = new CreateFolderCommand(UUID.randomUUID(), 1L, "name", UUID.randomUUID());
+
+            when(client.folderExists(command.getParentId())).thenThrow(new RemarkableClientException("Ai"));
+            when(client.folderExists(command.getFileId())).thenReturn(false);
+
+            // When
+            SyncEvent event = handler.apply(command);
+
+            // Then
+            assertThat(event.getResult()).isEqualTo(SyncEvent.Result.EXECUTION_FAILED);
+            assertThat(event.getMessage()).isEqualTo("Ai");
         }
     }
 
@@ -110,7 +122,7 @@ class SyncCommandHandlerTest {
 
         @Test
         @DisplayName("fails when parent folder doesn't exists")
-        void failWhenNoParent() throws RemarkableClientException {
+        void failWhenNoParent() throws RemarkableClientException, ConnectionException {
             // Given
             UploadFileCommand command = new UploadFileCommand(UUID.randomUUID(), 1L, "name", UUID.randomUUID());
 
@@ -126,7 +138,7 @@ class SyncCommandHandlerTest {
 
         @Test
         @DisplayName("fails when file already exists")
-        void failWhenAlreadyExists() throws RemarkableClientException {
+        void failWhenAlreadyExists() throws RemarkableClientException, ConnectionException {
             // Given
             UploadFileCommand command = new UploadFileCommand(UUID.randomUUID(), 1L, "name", UUID.randomUUID());
 
@@ -142,7 +154,7 @@ class SyncCommandHandlerTest {
 
         @Test
         @DisplayName("copies given file with the thumbnail")
-        void copyFile() throws RemarkableClientException {
+        void copyFile() throws RemarkableClientException, ConnectionException {
             // Given
             UploadFileCommand command = new UploadFileCommand(UUID.randomUUID(), 1L, "name", UUID.randomUUID());
             Path filePath = Path.of("file");
@@ -163,11 +175,11 @@ class SyncCommandHandlerTest {
 
         @Test
         @DisplayName("aborts when client connection not available")
-        void abortWhenConnectionNotAvailable() throws RemarkableClientException {
+        void abortWhenConnectionNotAvailable() throws RemarkableClientException, ConnectionException {
             // Given
             UploadFileCommand command = new UploadFileCommand(UUID.randomUUID(), 1L, "name", UUID.randomUUID());
 
-            when(client.folderExists(command.getParentId())).thenThrow(new RemarkableClientException("Not connected"));
+            when(client.folderExists(command.getParentId())).thenThrow(new ConnectionException("Not connected", null));
             when(client.fileExists(command.getFileId())).thenReturn(true);
 
             // When
@@ -180,7 +192,19 @@ class SyncCommandHandlerTest {
 
         @Test
         @DisplayName("creates failure event when client throw error")
-        void failWhenRemarkableClientFails() {
+        void failWhenRemarkableClientFails() throws RemarkableClientException, ConnectionException {
+            // Given
+            UploadFileCommand command = new UploadFileCommand(UUID.randomUUID(), 1L, "name", UUID.randomUUID());
+
+            when(client.folderExists(command.getParentId())).thenReturn(true);
+            when(client.fileExists(command.getFileId())).thenThrow(new RemarkableClientException("oh oh"));
+
+            // When
+            SyncEvent event = handler.apply(command);
+
+            // Then
+            assertThat(event.getResult()).isEqualTo(SyncEvent.Result.EXECUTION_FAILED);
+            assertThat(event.getMessage()).isEqualTo("oh oh");
         }
     }
 }

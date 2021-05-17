@@ -30,8 +30,10 @@ public class SyncCommandHandler {
             client.createFolder(command.getFileId(), command.getName());
             return SyncEvent.create(command, SUCCESS, "");
 
-        } catch (RemarkableClientException e) {
+        } catch (ConnectionException e) {
             return SyncEvent.create(command, CLIENT_NOT_AVAILABLE, e.getMessage());
+        } catch (RemarkableClientException e) {
+            return SyncEvent.create(command, EXECUTION_FAILED, e.getMessage());
         }
     }
 
@@ -50,8 +52,10 @@ public class SyncCommandHandler {
 
             return SyncEvent.create(command, SUCCESS, "");
 
-        } catch (RemarkableClientException e) {
+        } catch (ConnectionException e) {
             return SyncEvent.create(command, CLIENT_NOT_AVAILABLE, e.getMessage());
+        } catch (RemarkableClientException e) {
+            return SyncEvent.create(command, EXECUTION_FAILED, e.getMessage());
         }
     }
 }
