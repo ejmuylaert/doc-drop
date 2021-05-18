@@ -15,7 +15,11 @@ storage:
 spring:
   jpa:
     show-sql: true
+  batch:
+    # Don't start jobs on boot, when jobs are run is determined by the application
+    job.enabled: false
 
-logging:
-  level:
-    org.springframework.transaction: TRACE
+
+#logging:
+#  level:
+#    org.springframework.transaction: TRACE
