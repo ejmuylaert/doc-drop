@@ -1,7 +1,7 @@
 package org.ej.docdrop.config;
 
-import org.ej.docdrop.domain.RemarkableCommand;
-import org.ej.docdrop.repository.RemarkableCommandRepository;
+import org.ej.docdrop.domain.SyncCommand;
+import org.ej.docdrop.repository.SyncCommandRepository;
 import org.ej.docdrop.service.RemarkableClient;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -60,9 +60,9 @@ public class BatchConfiguration {
 //    }
 
     @Bean
-    public RepositoryItemReader<RemarkableCommand> reader(RemarkableCommandRepository repository) {
+    public RepositoryItemReader<SyncCommand> reader(SyncCommandRepository repository) {
 
-        return new RepositoryItemReaderBuilder<RemarkableCommand>()
+        return new RepositoryItemReaderBuilder<SyncCommand>()
                 .repository(repository)
                 .methodName("findAllByExecutionStartedAtIsNullAndExecutedAtIsNull")
                 .saveState(false)
@@ -73,7 +73,7 @@ public class BatchConfiguration {
     }
 
     @Bean
-    public ItemProcessor<RemarkableCommand, RemarkableCommand> processor(RemarkableClient client) {
+    public ItemProcessor<SyncCommand, SyncCommand> processor(RemarkableClient client) {
 
         return item -> {
             System.out.println(client);
@@ -88,9 +88,9 @@ public class BatchConfiguration {
     }
 
     @Bean
-    public RepositoryItemWriter<RemarkableCommand> writer(RemarkableCommandRepository repository) {
+    public RepositoryItemWriter<SyncCommand> writer(SyncCommandRepository repository) {
 
-        return new RepositoryItemWriterBuilder<RemarkableCommand>()
+        return new RepositoryItemWriterBuilder<SyncCommand>()
                 .repository(repository)
                 .methodName("save")
                 .build();
@@ -106,10 +106,10 @@ public class BatchConfiguration {
     }
 
     @Bean
-    public Step applySyncCommands(ItemReader<RemarkableCommand> reader, ItemWriter<RemarkableCommand> writer,
-                                  ItemProcessor<RemarkableCommand, RemarkableCommand> processor) {
+    public Step applySyncCommands(ItemReader<SyncCommand> reader, ItemWriter<SyncCommand> writer,
+                                  ItemProcessor<SyncCommand, SyncCommand> processor) {
         return stepBuilderFactory.get("1 - apply sync commands")
-                .<RemarkableCommand, RemarkableCommand>chunk(1)
+                .<SyncCommand, SyncCommand>chunk(1)
                 .reader(reader)
                 .processor(processor)
                 .writer(writer)

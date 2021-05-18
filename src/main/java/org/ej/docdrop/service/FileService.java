@@ -2,7 +2,7 @@ package org.ej.docdrop.service;
 
 import org.ej.docdrop.domain.*;
 import org.ej.docdrop.repository.FileInfoRepository;
-import org.ej.docdrop.repository.RemarkableCommandRepository;
+import org.ej.docdrop.repository.SyncCommandRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,12 +15,12 @@ import java.util.function.Function;
 public class FileService {
 
     private final FileInfoRepository fileInfoRepository;
-    private final RemarkableCommandRepository commandRepository;
+    private final SyncCommandRepository commandRepository;
 
     private final FileStorage fileStorage;
 
     public FileService(FileInfoRepository fileInfoRepository,
-                       RemarkableCommandRepository commandRepository,
+                       SyncCommandRepository commandRepository,
                        @Value("${storage.path}") String storageDirectory) {
 
         this.fileInfoRepository = fileInfoRepository;
@@ -33,7 +33,7 @@ public class FileService {
         return fileInfoRepository.getFileInfoByParentId(parentId);
     }
 
-    Iterable<RemarkableCommand> pendingCommands() {
+    Iterable<SyncCommand> pendingCommands() {
         return commandRepository.findAllByOrderByCommandNumberAsc();
     }
 
@@ -113,11 +113,11 @@ public class FileService {
         }
     }
 
-    private void saveCommand(Function<Long, RemarkableCommand> commandCreator) {
-        RemarkableCommand lastCommand = commandRepository.findFirstByOrderByCommandNumberDesc();
+    private void saveCommand(Function<Long, SyncCommand> commandCreator) {
+        SyncCommand lastCommand = commandRepository.findFirstByOrderByCommandNumberDesc();
         long number = lastCommand == null ? 0 : lastCommand.getCommandNumber() + 1;
 
-        RemarkableCommand command = commandCreator.apply(number);
+        SyncCommand command = commandCreator.apply(number);
         commandRepository.save(command);
     }
 

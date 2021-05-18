@@ -3,10 +3,10 @@ package org.ej.docdrop.service;
 import org.ej.docdrop.domain.CreateFolderCommand;
 import org.ej.docdrop.domain.Document;
 import org.ej.docdrop.domain.FileInfo;
-import org.ej.docdrop.domain.RemarkableCommand;
+import org.ej.docdrop.domain.SyncCommand;
 import org.ej.docdrop.repository.DocumentRepository;
 import org.ej.docdrop.repository.FileInfoRepository;
-import org.ej.docdrop.repository.RemarkableCommandRepository;
+import org.ej.docdrop.repository.SyncCommandRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -22,12 +22,12 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final FileInfoRepository fileRepository;
-    private final RemarkableCommandRepository commandRepository;
+    private final SyncCommandRepository commandRepository;
     private final Path uploadPath;
 
     public DocumentService(@Value("${upload.path}") String uploadDirectory,
                            FileInfoRepository fileRepository,
-                           RemarkableCommandRepository commandRepository,
+                           SyncCommandRepository commandRepository,
                            DocumentRepository documentRepository) {
         this.uploadPath = Paths.get(uploadDirectory);
         this.fileRepository = fileRepository;
@@ -70,7 +70,7 @@ public class DocumentService {
         return fileRepository.findAll();
     }
 
-    public Iterable<RemarkableCommand> getPendingCommands() {
+    public Iterable<SyncCommand> getPendingCommands() {
         return commandRepository.findAll();
     }
 }

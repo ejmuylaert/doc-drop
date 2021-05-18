@@ -3,7 +3,7 @@ package org.ej.docdrop.service;
 import org.ej.docdrop.AbstractDatabaseTest;
 import org.ej.docdrop.domain.*;
 import org.ej.docdrop.repository.FileInfoRepository;
-import org.ej.docdrop.repository.RemarkableCommandRepository;
+import org.ej.docdrop.repository.SyncCommandRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -37,7 +37,7 @@ import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTest
 class FileServiceTest extends AbstractDatabaseTest {
 
     private final FileInfoRepository fileInfoRepository;
-    private final RemarkableCommandRepository commandRepository;
+    private final SyncCommandRepository commandRepository;
     private final FileService service;
 
     @TempDir
@@ -45,10 +45,10 @@ class FileServiceTest extends AbstractDatabaseTest {
     private Path uploadPath;
 
     public FileServiceTest(@Autowired FileInfoRepository fileInfoRepository,
-                           @Autowired RemarkableCommandRepository commandRepository) {
+                           @Autowired SyncCommandRepository commandRepository) {
 
         this.fileInfoRepository = mock(FileInfoRepository.class, delegatesTo(fileInfoRepository));
-        this.commandRepository = mock(RemarkableCommandRepository.class,
+        this.commandRepository = mock(SyncCommandRepository.class,
                 delegatesTo(commandRepository));
 
         this.service = new FileService(fileInfoRepository, commandRepository,
@@ -131,7 +131,7 @@ class FileServiceTest extends AbstractDatabaseTest {
         void generateCreateFolderCommand() {
             // When
             FileInfo folder = service.createFolder("new folder", null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(commands).hasSize(1);
@@ -148,10 +148,10 @@ class FileServiceTest extends AbstractDatabaseTest {
             // When
             service.createFolder("first", null);
             service.createFolder("second", null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
-            Iterator<RemarkableCommand> commandIterator = commands.iterator();
+            Iterator<SyncCommand> commandIterator = commands.iterator();
             CreateFolderCommand first = (CreateFolderCommand) commandIterator.next();
             CreateFolderCommand second = (CreateFolderCommand) commandIterator.next();
 
@@ -173,7 +173,7 @@ class FileServiceTest extends AbstractDatabaseTest {
             // When
             FileInfo newFolder = service.createFolder("nested", folder.getId());
             List<FileInfo> contents = service.folder(folder.getId());
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(newFolder.getParentId()).isEqualTo(folder.getId());
@@ -194,7 +194,7 @@ class FileServiceTest extends AbstractDatabaseTest {
 
             // Then
             List<FileInfo> folder = service.folder(null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             assertThat(folder).hasSize(0);
             assertThat(commands).hasSize(0);
@@ -211,7 +211,7 @@ class FileServiceTest extends AbstractDatabaseTest {
             assertThatThrownBy(() -> service.createFolder("child", file.getId()))
                     .isInstanceOf(RuntimeException.class);
 
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
             assertThat(commands).hasSize(0);
 
             Iterable<FileInfo> allFiles = fileInfoRepository.findAll();
@@ -277,7 +277,7 @@ class FileServiceTest extends AbstractDatabaseTest {
             // When
             service.addFile("the file name", testFile, thumbnail, null);
             List<FileInfo> contents = service.folder(null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(contents).hasSize(1);
@@ -306,13 +306,13 @@ class FileServiceTest extends AbstractDatabaseTest {
             service.addFile("first file", testFile1, thumbnail1, null);
             service.addFile("second file", testFile2, thumbnail2, null);
             List<FileInfo> contents = service.folder(null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(contents).hasSize(2);
             assertThat(commands).hasSize(2);
 
-            Iterator<RemarkableCommand> commandIterator = commands.iterator();
+            Iterator<SyncCommand> commandIterator = commands.iterator();
             assertThat(commandIterator.next().getCommandNumber()).isEqualTo(0);
             assertThat(commandIterator.next().getCommandNumber()).isEqualTo(1);
         }
@@ -330,13 +330,13 @@ class FileServiceTest extends AbstractDatabaseTest {
             // When
             service.addFile("the file name", testFile, thumbnail, folder.getId());
             List<FileInfo> contents = service.folder(folder.getId());
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(contents).hasSize(1);
             assertThat(commands).hasSize(2);
 
-            Iterator<RemarkableCommand> commandIterator = commands.iterator();
+            Iterator<SyncCommand> commandIterator = commands.iterator();
             commandIterator.next(); // pop createFolderCommand from iterator
             UploadFileCommand command = (UploadFileCommand) commandIterator.next();
             assertThat(command.getName()).isEqualTo("the file name");
@@ -401,7 +401,7 @@ class FileServiceTest extends AbstractDatabaseTest {
 
             // When
             service.renameFile(existingFile.getId(), "new name");
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(commands).hasSize(1);
@@ -418,7 +418,7 @@ class FileServiceTest extends AbstractDatabaseTest {
 
             // Then
             List<FileInfo> files = service.folder(null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             assertThat(files).hasSize(0);
             assertThat(commands).hasSize(0);
@@ -452,7 +452,7 @@ class FileServiceTest extends AbstractDatabaseTest {
 
             // When
             service.removeFile(existingFile.getId());
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(commands).hasSize(1);

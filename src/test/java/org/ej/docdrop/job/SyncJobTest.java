@@ -3,7 +3,7 @@ package org.ej.docdrop.job;
 
 import org.ej.docdrop.AbstractDatabaseTest;
 import org.ej.docdrop.domain.CreateFolderCommand;
-import org.ej.docdrop.repository.RemarkableCommandRepository;
+import org.ej.docdrop.repository.SyncCommandRepository;
 import org.ej.docdrop.service.RemarkableClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.test.JobLauncherTestUtils;
@@ -29,7 +29,7 @@ public class SyncJobTest extends AbstractDatabaseTest {
     private JobLauncherTestUtils jobLauncherTestUtils;
 
     @Autowired
-    private RemarkableCommandRepository commandRepository;
+    private SyncCommandRepository commandRepository;
 
     @MockBean
     private RemarkableClient remarkableClient;

@@ -6,7 +6,7 @@ import org.ej.docdrop.domain.UploadFileCommand;
 
 import java.nio.file.Path;
 
-import static org.ej.docdrop.domain.SyncEvent.Result.*;
+import static org.ej.docdrop.domain.SyncResult.*;
 
 public class SyncCommandHandler {
 
@@ -18,7 +18,7 @@ public class SyncCommandHandler {
         this.storage = storage;
     }
 
-    public SyncEvent apply(CreateFolderCommand command) {
+    public SyncEvent apply(CreateFolderCommand command) throws ConnectionException {
         try {
             if (!client.folderExists(command.getParentId())) {
                 return SyncEvent.create(command, PRE_CONDITION_FAILED, "Parent folder does not exist");
@@ -30,14 +30,12 @@ public class SyncCommandHandler {
             client.createFolder(command.getFileId(), command.getName());
             return SyncEvent.create(command, SUCCESS, "");
 
-        } catch (ConnectionException e) {
-            return SyncEvent.create(command, CLIENT_NOT_AVAILABLE, e.getMessage());
         } catch (RemarkableClientException e) {
             return SyncEvent.create(command, EXECUTION_FAILED, e.getMessage());
         }
     }
 
-    public SyncEvent apply(UploadFileCommand command) {
+    public SyncEvent apply(UploadFileCommand command) throws ConnectionException {
         try {
             if (!client.folderExists(command.getParentId())) {
                 return SyncEvent.create(command, PRE_CONDITION_FAILED, "Parent folder does not exists");
@@ -52,8 +50,6 @@ public class SyncCommandHandler {
 
             return SyncEvent.create(command, SUCCESS, "");
 
-        } catch (ConnectionException e) {
-            return SyncEvent.create(command, CLIENT_NOT_AVAILABLE, e.getMessage());
         } catch (RemarkableClientException e) {
             return SyncEvent.create(command, EXECUTION_FAILED, e.getMessage());
         }

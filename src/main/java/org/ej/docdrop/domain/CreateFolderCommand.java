@@ -1,10 +1,11 @@
 package org.ej.docdrop.domain;
 
 import javax.persistence.Entity;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-public class CreateFolderCommand extends RemarkableCommand {
+public class CreateFolderCommand extends SyncCommand {
 
     private final String name;
     private final UUID parentId;
@@ -15,7 +16,7 @@ public class CreateFolderCommand extends RemarkableCommand {
     }
 
     public CreateFolderCommand(UUID fileId, long commandNumber, String name, UUID parentId) {
-        super(fileId, commandNumber);
+        super(fileId, commandNumber, Instant.now());
 
         this.name = name;
         this.parentId = parentId;

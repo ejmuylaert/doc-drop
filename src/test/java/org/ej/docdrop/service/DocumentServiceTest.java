@@ -4,10 +4,10 @@ import org.ej.docdrop.AbstractDatabaseTest;
 import org.ej.docdrop.domain.CreateFolderCommand;
 import org.ej.docdrop.domain.Document;
 import org.ej.docdrop.domain.FileInfo;
-import org.ej.docdrop.domain.RemarkableCommand;
+import org.ej.docdrop.domain.SyncCommand;
 import org.ej.docdrop.repository.DocumentRepository;
 import org.ej.docdrop.repository.FileInfoRepository;
-import org.ej.docdrop.repository.RemarkableCommandRepository;
+import org.ej.docdrop.repository.SyncCommandRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -42,7 +42,7 @@ class DocumentServiceTest extends AbstractDatabaseTest {
 
     public DocumentServiceTest(@Autowired DocumentRepository repository,
                                @Autowired FileInfoRepository fileRepository,
-                               @Autowired RemarkableCommandRepository commandRepository) {
+                               @Autowired SyncCommandRepository commandRepository) {
         this.repository = repository;
         this.fileRepository = fileRepository;
         this.service = new DocumentService(storagePath.getParent().toString(), fileRepository,
@@ -128,10 +128,10 @@ class DocumentServiceTest extends AbstractDatabaseTest {
         service.createFolder("unit test folder", null);
 
         // Then
-        Iterable<RemarkableCommand> commands = service.getPendingCommands();
+        Iterable<SyncCommand> commands = service.getPendingCommands();
 
         assertThat(commands).hasSize(1);
-        RemarkableCommand command = commands.iterator().next();
+        SyncCommand command = commands.iterator().next();
         assertThat(command).isInstanceOf(CreateFolderCommand.class);
 
         CreateFolderCommand createFolderCommand = (CreateFolderCommand) command;

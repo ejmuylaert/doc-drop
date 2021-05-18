@@ -2,6 +2,7 @@ package org.ej.docdrop.service;
 
 import org.ej.docdrop.domain.CreateFolderCommand;
 import org.ej.docdrop.domain.SyncEvent;
+import org.ej.docdrop.domain.SyncResult;
 import org.ej.docdrop.domain.UploadFileCommand;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,6 +13,7 @@ import java.nio.file.Path;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class SyncCommandHandlerTest {
@@ -45,7 +47,7 @@ class SyncCommandHandlerTest {
             SyncEvent event = handler.apply(command);
 
             // Then
-            assertThat(event.getResult()).isEqualTo(SyncEvent.Result.PRE_CONDITION_FAILED);
+            assertThat(event.getResult()).isEqualTo(SyncResult.PRE_CONDITION_FAILED);
         }
 
         @Test
@@ -61,7 +63,7 @@ class SyncCommandHandlerTest {
             SyncEvent event = handler.apply(command);
 
             // Then
-            assertThat(event.getResult()).isEqualTo(SyncEvent.Result.PRE_CONDITION_FAILED);
+            assertThat(event.getResult()).isEqualTo(SyncResult.PRE_CONDITION_FAILED);
         }
 
         @Test
@@ -77,7 +79,7 @@ class SyncCommandHandlerTest {
             SyncEvent event = handler.apply(command);
 
             // Then
-            assertThat(event.getResult()).isEqualTo(SyncEvent.Result.SUCCESS);
+            assertThat(event.getResult()).isEqualTo(SyncResult.SUCCESS);
             verify(client, times(1)).createFolder(command.getFileId(), command.getName());
         }
 
@@ -90,12 +92,8 @@ class SyncCommandHandlerTest {
             when(client.folderExists(command.getParentId())).thenThrow(new ConnectionException("Not connected", null));
             when(client.folderExists(command.getFileId())).thenReturn(false);
 
-            // When
-            SyncEvent event = handler.apply(command);
-
-            // Then
-            assertThat(event.getResult()).isEqualTo(SyncEvent.Result.CLIENT_NOT_AVAILABLE);
-            assertThat(event.getMessage()).isEqualTo("Not connected");
+            // When, Then
+            assertThatThrownBy(() ->handler.apply(command)).isInstanceOf(ConnectionException.class);
         }
 
         @Test
@@ -111,7 +109,7 @@ class SyncCommandHandlerTest {
             SyncEvent event = handler.apply(command);
 
             // Then
-            assertThat(event.getResult()).isEqualTo(SyncEvent.Result.EXECUTION_FAILED);
+            assertThat(event.getResult()).isEqualTo(SyncResult.EXECUTION_FAILED);
             assertThat(event.getMessage()).isEqualTo("Ai");
         }
     }
@@ -133,7 +131,7 @@ class SyncCommandHandlerTest {
             SyncEvent event = handler.apply(command);
 
             // Then
-            assertThat(event.getResult()).isEqualTo(SyncEvent.Result.PRE_CONDITION_FAILED);
+            assertThat(event.getResult()).isEqualTo(SyncResult.PRE_CONDITION_FAILED);
         }
 
         @Test
@@ -149,7 +147,7 @@ class SyncCommandHandlerTest {
             SyncEvent event = handler.apply(command);
 
             // Then
-            assertThat(event.getResult()).isEqualTo(SyncEvent.Result.PRE_CONDITION_FAILED);
+            assertThat(event.getResult()).isEqualTo(SyncResult.PRE_CONDITION_FAILED);
         }
 
         @Test
@@ -169,7 +167,7 @@ class SyncCommandHandlerTest {
             SyncEvent event = handler.apply(command);
 
             // Then
-            assertThat(event.getResult()).isEqualTo(SyncEvent.Result.SUCCESS);
+            assertThat(event.getResult()).isEqualTo(SyncResult.SUCCESS);
             verify(client, times(1)).uploadFile(command.getFileId(), command.getParentId(), "name", filePath, thumbnailPath);
         }
 
@@ -182,12 +180,8 @@ class SyncCommandHandlerTest {
             when(client.folderExists(command.getParentId())).thenThrow(new ConnectionException("Not connected", null));
             when(client.fileExists(command.getFileId())).thenReturn(true);
 
-            // When
-            SyncEvent event = handler.apply(command);
-
-            // Then
-            assertThat(event.getResult()).isEqualTo(SyncEvent.Result.CLIENT_NOT_AVAILABLE);
-            assertThat(event.getMessage()).isEqualTo("Not connected");
+            // When, Then
+            assertThatThrownBy(() ->  handler.apply(command)).isInstanceOf(ConnectionException.class);
         }
 
         @Test
@@ -203,7 +197,7 @@ class SyncCommandHandlerTest {
             SyncEvent event = handler.apply(command);
 
             // Then
-            assertThat(event.getResult()).isEqualTo(SyncEvent.Result.EXECUTION_FAILED);
+            assertThat(event.getResult()).isEqualTo(SyncResult.EXECUTION_FAILED);
             assertThat(event.getMessage()).isEqualTo("oh oh");
         }
     }

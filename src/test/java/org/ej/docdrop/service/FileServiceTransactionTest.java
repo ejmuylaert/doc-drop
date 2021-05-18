@@ -3,9 +3,9 @@ package org.ej.docdrop.service;
 import org.ej.docdrop.AbstractDatabaseTest;
 import org.ej.docdrop.domain.CreateFolderCommand;
 import org.ej.docdrop.domain.FileInfo;
-import org.ej.docdrop.domain.RemarkableCommand;
+import org.ej.docdrop.domain.SyncCommand;
 import org.ej.docdrop.repository.FileInfoRepository;
-import org.ej.docdrop.repository.RemarkableCommandRepository;
+import org.ej.docdrop.repository.SyncCommandRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -37,14 +37,14 @@ import static org.mockito.Mockito.mock;
 class FileServiceTransactionTest extends AbstractDatabaseTest {
 
     private final FileInfoRepository fileInfoRepository;
-    private final RemarkableCommandRepository commandRepository;
+    private final SyncCommandRepository commandRepository;
     private final FileService service;
 
     @TempDir
     static Path uploadPath;
 
     public FileServiceTransactionTest(@Autowired FileInfoRepository fileInfoRepository,
-                                      @Autowired RemarkableCommandRepository commandRepository,
+                                      @Autowired SyncCommandRepository commandRepository,
                                       @Autowired FileService service) {
 
         this.fileInfoRepository = fileInfoRepository;
@@ -63,7 +63,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
     void storeParentId() {
         // Given
         SpringBeanMockUtil.mockFieldOnBean(service, FileInfoRepository.class, fileInfoRepository);
-        SpringBeanMockUtil.mockFieldOnBean(service, RemarkableCommandRepository.class,
+        SpringBeanMockUtil.mockFieldOnBean(service, SyncCommandRepository.class,
                 commandRepository);
 
         FileInfo folder = new FileInfo(null, true, "my folder");
@@ -72,7 +72,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
         // When
         FileInfo newFolder = service.createFolder("nested", folder.getId());
         List<FileInfo> contents = service.folder(folder.getId());
-        Iterable<RemarkableCommand> commands = service.pendingCommands();
+        Iterable<SyncCommand> commands = service.pendingCommands();
 
         // Then
         assertThat(newFolder.getParentId()).isEqualTo(folder.getId());
@@ -98,7 +98,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
                     .isInstanceOf(Throwable.class);
 
             List<FileInfo> folderContents = service.folder(null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(folderContents).hasSize(0);
@@ -116,7 +116,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
                     .isInstanceOf(Throwable.class);
 
             List<FileInfo> folderContents = service.folder(null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(folderContents).hasSize(0);
@@ -143,7 +143,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
             assertThatThrownBy(() -> service.addFile("the name", testFile, thumbnail, null))
                     .isInstanceOf(Throwable.class);
             List<FileInfo> folderContents = service.folder(null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(folderContents).hasSize(0);
@@ -165,7 +165,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
             assertThatThrownBy(() -> service.addFile("the name", testFile, thumbnail, null))
                     .isInstanceOf(Throwable.class);
             List<FileInfo> folderContents = service.folder(null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(folderContents).hasSize(0);
@@ -190,7 +190,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
             assertThatThrownBy(() -> service.renameFile(original.getId(), "name"))
                     .isInstanceOf(Throwable.class);
             List<FileInfo> folderContents = service.folder(null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(folderContents).hasSize(1);
@@ -211,7 +211,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
             assertThatThrownBy(() -> service.renameFile(original.getId(), "name"))
                     .isInstanceOf(Throwable.class);
             List<FileInfo> folderContents = service.folder(null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(folderContents).hasSize(1);
@@ -237,7 +237,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
             assertThatThrownBy(() -> service.removeFile(original.getId()))
                     .isInstanceOf(Throwable.class);
             List<FileInfo> folderContents = service.folder(null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(folderContents).hasSize(1);
@@ -258,7 +258,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
             assertThatThrownBy(() -> service.removeFile(original.getId()))
                     .isInstanceOf(Throwable.class);
             List<FileInfo> folderContents = service.folder(null);
-            Iterable<RemarkableCommand> commands = service.pendingCommands();
+            Iterable<SyncCommand> commands = service.pendingCommands();
 
             // Then
             assertThat(folderContents).hasSize(1);
@@ -279,7 +279,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
 
         SpringBeanMockUtil.mockFieldOnBean(service, FileInfoRepository.class,
                 mockFileInfoRepository);
-        SpringBeanMockUtil.mockFieldOnBean(service, RemarkableCommandRepository.class,
+        SpringBeanMockUtil.mockFieldOnBean(service, SyncCommandRepository.class,
                 commandRepository);
     }
 
@@ -295,12 +295,12 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
 
         SpringBeanMockUtil.mockFieldOnBean(service, FileInfoRepository.class,
                 mockFileInfoRepository);
-        SpringBeanMockUtil.mockFieldOnBean(service, RemarkableCommandRepository.class,
+        SpringBeanMockUtil.mockFieldOnBean(service, SyncCommandRepository.class,
                 commandRepository);
     }
 
     private void setupFailingCommandSave() {
-        RemarkableCommandRepository mockCommandRepository = mock(RemarkableCommandRepository.class,
+        SyncCommandRepository mockCommandRepository = mock(SyncCommandRepository.class,
                 delegatesTo(commandRepository));
 
         doAnswer(invocation -> {
@@ -310,7 +310,7 @@ class FileServiceTransactionTest extends AbstractDatabaseTest {
                 .save(any());
 
         SpringBeanMockUtil.mockFieldOnBean(service, FileInfoRepository.class, fileInfoRepository);
-        SpringBeanMockUtil.mockFieldOnBean(service, RemarkableCommandRepository.class,
+        SpringBeanMockUtil.mockFieldOnBean(service, SyncCommandRepository.class,
                 mockCommandRepository);
     }
 }
