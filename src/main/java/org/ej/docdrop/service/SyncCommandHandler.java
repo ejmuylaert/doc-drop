@@ -3,11 +3,13 @@ package org.ej.docdrop.service;
 import org.ej.docdrop.domain.CreateFolderCommand;
 import org.ej.docdrop.domain.SyncEvent;
 import org.ej.docdrop.domain.UploadFileCommand;
+import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 
 import static org.ej.docdrop.domain.SyncResult.*;
 
+@Component
 public class SyncCommandHandler {
 
     private final RemarkableClient client;

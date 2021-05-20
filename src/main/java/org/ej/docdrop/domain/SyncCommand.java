@@ -24,10 +24,8 @@ public abstract class SyncCommand {
     private final long commandNumber;
     private final Instant createdAt;
     private Instant syncedAt;
-    @Type( type = "pgsql_enum" )
-    @Column(
-            columnDefinition = "sync_result"
-    )
+    @Type(type = "pgsql_enum")
+    @Column(columnDefinition = "sync_result")
     private SyncResult syncResult;
     private String syncMessage;
 
@@ -43,6 +41,12 @@ public abstract class SyncCommand {
         this.createdAt = createdAt;
     }
 
+    public void setResult(SyncEvent event) {
+        this.syncedAt = Instant.now();
+        this.syncResult = event.getResult();
+        this.syncMessage = event.getMessage();
+    }
+
     public UUID getFileId() {
         return fileId;
     }
@@ -53,6 +57,18 @@ public abstract class SyncCommand {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getSyncedAt() {
+        return syncedAt;
+    }
+
+    public SyncResult getSyncResult() {
+        return syncResult;
+    }
+
+    public String getSyncMessage() {
+        return syncMessage;
     }
 
     public static class CommandId implements Serializable {

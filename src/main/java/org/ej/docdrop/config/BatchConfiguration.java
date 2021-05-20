@@ -1,8 +1,10 @@
 package org.ej.docdrop.config;
 
+import org.ej.docdrop.domain.CreateFolderCommand;
 import org.ej.docdrop.domain.SyncCommand;
+import org.ej.docdrop.domain.SyncEvent;
 import org.ej.docdrop.repository.SyncCommandRepository;
-import org.ej.docdrop.service.RemarkableClient;
+import org.ej.docdrop.service.SyncCommandHandler;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -22,7 +24,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
 
 import java.util.Map;
-import java.util.UUID;
 
 @Configuration
 @EnableBatchProcessing
@@ -64,7 +65,7 @@ public class BatchConfiguration {
 
         return new RepositoryItemReaderBuilder<SyncCommand>()
                 .repository(repository)
-                .methodName("findAllByExecutionStartedAtIsNullAndExecutedAtIsNull")
+                .methodName("findAllBySyncedAtIsNull")
                 .saveState(false)
                 .maxItemCount(10)
                 .pageSize(10)
@@ -73,17 +74,16 @@ public class BatchConfiguration {
     }
 
     @Bean
-    public ItemProcessor<SyncCommand, SyncCommand> processor(RemarkableClient client) {
+    public ItemProcessor<SyncCommand, SyncCommand> processor(SyncCommandHandler commandHandler) {
 
         return item -> {
-            System.out.println(client);
-            try {
-                System.out.println(client.folderExists(UUID.randomUUID()));
-            } catch (Throwable e) {
-                e.printStackTrace();
+            if (item instanceof CreateFolderCommand command) {
+                SyncEvent event = commandHandler.apply(command);
+                item.setResult(event);
+                return item;
+            } else {
+                throw new RuntimeException("Unexpected command");
             }
-            System.out.println("Processing command: " + item);
-            return item;
         };
     }
 
@@ -92,7 +92,7 @@ public class BatchConfiguration {
 
         return new RepositoryItemWriterBuilder<SyncCommand>()
                 .repository(repository)
-                .methodName("save")
+                .methodName("updateResult")
                 .build();
     }
 
