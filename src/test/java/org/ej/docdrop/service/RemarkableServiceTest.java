@@ -153,7 +153,7 @@ class RemarkableServiceTest extends AbstractDatabaseTest {
                     mapper.writeValueAsString(metadataBuilder.setVisibleName("new-name").setParent(null).create());
             fileConsumer.accept(fileId, fileContent);
 
-            Consumer<ConnectionException> completionHandler = invocation.getArgument(1,
+            Consumer<RemarkableConnectionException> completionHandler = invocation.getArgument(1,
                     Consumer.class);
             completionHandler.accept(null);
 
@@ -185,10 +185,10 @@ class RemarkableServiceTest extends AbstractDatabaseTest {
                     mapper.writeValueAsString(metadataBuilder.setVisibleName("new-name").setParent(null).create());
             fileConsumer.accept(UUID.randomUUID(), fileContent);
 
-            Consumer<ConnectionException> completionHandler = invocation.getArgument(1,
+            Consumer<RemarkableConnectionException> completionHandler = invocation.getArgument(1,
                     Consumer.class);
 
-            completionHandler.accept(new ConnectionException("unit test error", null));
+            completionHandler.accept(new RemarkableConnectionException("unit test error", null));
 
             return RemarkableStatus.AVAILABLE;
         });

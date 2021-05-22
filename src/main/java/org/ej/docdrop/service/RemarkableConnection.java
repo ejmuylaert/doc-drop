@@ -34,7 +34,7 @@ class RemarkableConnection {
         sshClient.setConnectTimeout(200);
     }
 
-    private void ensureConnection() throws ConnectionException {
+    private void ensureConnection() throws RemarkableConnectionException {
         if (sshClient.isConnected() && sshClient.isAuthenticated()) {
             return;
         }
@@ -42,30 +42,30 @@ class RemarkableConnection {
         try {
             sshClient.connect("192.168.2.2");
         } catch (IOException e) {
-            throw new ConnectionException("Trouble connecting to Remarkable", e);
+            throw new RemarkableConnectionException("Trouble connecting to Remarkable", e);
         }
 
         try {
             sshClient.authPassword("root", "ZjZQdup7xQ");
             connectSftp();
         } catch (UserAuthException e) {
-            throw new ConnectionException("Failed to authenticate", e);
+            throw new RemarkableConnectionException("Failed to authenticate", e);
         } catch (TransportException e) {
-            throw new ConnectionException("Trouble with connection during authentication", e);
+            throw new RemarkableConnectionException("Trouble with connection during authentication", e);
         }
     }
 
-    private void connectSftp() throws ConnectionException {
+    private void connectSftp() throws RemarkableConnectionException {
         if (sftpClient == null) {
             try {
                 sftpClient = sshClient.newSFTPClient();
             } catch (IOException e) {
-                throw new ConnectionException("Error creating sftp client", e);
+                throw new RemarkableConnectionException("Error creating sftp client", e);
             }
         }
     }
 
-    List<RemoteResourceInfo> readFileTree() throws ConnectionException {
+    List<RemoteResourceInfo> readFileTree() throws RemarkableConnectionException {
         ensureConnection();
 
         List<RemoteResourceInfo> listing;
@@ -74,7 +74,7 @@ class RemarkableConnection {
                     "/home/root/.local/share/remarkable/xochitl",
                     resource -> resource.getName().endsWith("metadata"));
         } catch (IOException e) {
-            throw new ConnectionException("Trouble listing files", e);
+            throw new RemarkableConnectionException("Trouble listing files", e);
         }
 
 //        // Should throw from this point, or just ignore / log?
@@ -87,7 +87,7 @@ class RemarkableConnection {
         return listing;
     }
 
-    Optional<byte[]> readFile(Path path) throws ConnectionException {
+    Optional<byte[]> readFile(Path path) throws RemarkableConnectionException {
         ensureConnection();
 
         RemoteFile file = null;
@@ -103,11 +103,11 @@ class RemarkableConnection {
                 return Optional.empty();
             } else {
                 log.error("Error opening file: " + path, e);
-                throw new ConnectionException("Error opening file: " + path, e);
+                throw new RemarkableConnectionException("Error opening file: " + path, e);
             }
         } catch (IOException e) {
             log.error("Error reading file: " + path, e);
-            throw new ConnectionException("Error reading file: " + path, e);
+            throw new RemarkableConnectionException("Error reading file: " + path, e);
         } finally {
             if (file != null) {
                 try {
@@ -120,48 +120,48 @@ class RemarkableConnection {
         }
     }
 
-    String readFileOld(String path) throws ConnectionException {
+    String readFileOld(String path) throws RemarkableConnectionException {
         ensureConnection();
 
         RemoteFile file;
         try {
             file = sftpClient.open(path);
         } catch (IOException e) {
-            throw new ConnectionException("Error opening file: " + path, e);
+            throw new RemarkableConnectionException("Error opening file: " + path, e);
         }
 
         int length;
         try {
             length = (int) file.length();
         } catch (IOException e) {
-            throw new ConnectionException("Error determining length of: " + file, e);
+            throw new RemarkableConnectionException("Error determining length of: " + file, e);
         }
         byte[] contents = new byte[length];
         try {
             file.read(0, contents, 0, length);
         } catch (IOException e) {
-            throw new ConnectionException("Error reading file: " + file, e);
+            throw new RemarkableConnectionException("Error reading file: " + file, e);
         }
 
         try {
             file.close();
         } catch (IOException e) {
-            throw new ConnectionException("Error closing file: " + file, e);
+            throw new RemarkableConnectionException("Error closing file: " + file, e);
         }
 
         return new String(contents, StandardCharsets.UTF_8);
     }
 
-    void writeNewFile(String name, String content) throws ConnectionException {
+    void writeNewFile(String name, String content) throws RemarkableConnectionException {
 
     }
 
-    void createDirectory(UUID id, String name) throws ConnectionException {
+    void createDirectory(UUID id, String name) throws RemarkableConnectionException {
         SFTPClient sftpClient;
         try {
             sftpClient = sshClient.newSFTPClient();
         } catch (IOException e) {
-            throw new ConnectionException("Trouble creating SFTP client", e);
+            throw new RemarkableConnectionException("Trouble creating SFTP client", e);
         }
 
         RemoteFile file;
@@ -169,7 +169,7 @@ class RemarkableConnection {
             file = sftpClient.open(id.toString(), Set.of(OpenMode.CREAT, OpenMode.EXCL,
                     OpenMode.WRITE));
         } catch (IOException e) {
-            throw new ConnectionException("Error creating file (for directory)", e);
+            throw new RemarkableConnectionException("Error creating file (for directory)", e);
         }
 
 //        file.write();

@@ -20,7 +20,7 @@ public class SyncCommandHandler {
         this.storage = storage;
     }
 
-    public SyncEvent apply(CreateFolderCommand command) throws ConnectionException {
+    public SyncEvent apply(CreateFolderCommand command) throws RemarkableConnectionException {
         try {
             if (command.getParentId() != null && !client.folderExists(command.getParentId())) {
                 return SyncEvent.create(command, PRE_CONDITION_FAILED, "Parent folder does not exist");
@@ -37,7 +37,7 @@ public class SyncCommandHandler {
         }
     }
 
-    public SyncEvent apply(UploadFileCommand command) throws ConnectionException {
+    public SyncEvent apply(UploadFileCommand command) throws RemarkableConnectionException {
         try {
             if (!client.folderExists(command.getParentId())) {
                 return SyncEvent.create(command, PRE_CONDITION_FAILED, "Parent folder does not exists");

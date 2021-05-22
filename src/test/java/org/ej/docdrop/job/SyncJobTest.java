@@ -7,7 +7,7 @@ import org.ej.docdrop.domain.SyncCommand;
 import org.ej.docdrop.domain.SyncEvent;
 import org.ej.docdrop.domain.SyncResult;
 import org.ej.docdrop.repository.SyncCommandRepository;
-import org.ej.docdrop.service.ConnectionException;
+import org.ej.docdrop.service.RemarkableConnectionException;
 import org.ej.docdrop.service.SyncCommandHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -165,7 +165,7 @@ public class SyncJobTest extends AbstractDatabaseTest {
         commandRepository.save(command1);
         commandRepository.save(command2);
 
-        when(commandHandler.apply(any(CreateFolderCommand.class))).thenThrow(new ConnectionException("No ...", null));
+        when(commandHandler.apply(any(CreateFolderCommand.class))).thenThrow(new RemarkableConnectionException("No ...", null));
 
         // When
         JobExecution jobExecution = jobLauncherTestUtils.launchJob();

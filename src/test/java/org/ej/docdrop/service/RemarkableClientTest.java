@@ -57,7 +57,7 @@ class RemarkableClientTest {
 
         @Test
         @DisplayName("returns false when no file with given id present")
-        void returnFalseWhenNoFileFound() throws RemarkableClientException, ConnectionException {
+        void returnFalseWhenNoFileFound() throws RemarkableClientException, RemarkableConnectionException {
             // Given
             RemarkableConnection connection = mock(RemarkableConnection.class);
             Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
@@ -74,7 +74,7 @@ class RemarkableClientTest {
 
         @Test
         @DisplayName("returns false when deleted flag is set")
-        void returnFalseWhenDeleted() throws JsonProcessingException, ConnectionException, RemarkableClientException {
+        void returnFalseWhenDeleted() throws JsonProcessingException, RemarkableConnectionException, RemarkableClientException {
             RemarkableMetadata metadata = metadataBuilder.setDeleted(true).create();
             String metadataJson = mapper.writeValueAsString(metadata);
 
@@ -93,7 +93,7 @@ class RemarkableClientTest {
 
         @Test
         @DisplayName("throws error when file is not of type folder")
-        void throwErrorWhenNotFolder() throws JsonProcessingException, ConnectionException {
+        void throwErrorWhenNotFolder() throws JsonProcessingException, RemarkableConnectionException {
             RemarkableMetadata metadata = metadataBuilder.setType(DocumentType.DOCUMENT).create();
             String metadataJson = mapper.writeValueAsString(metadata);
 
@@ -109,7 +109,7 @@ class RemarkableClientTest {
 
         @Test
         @DisplayName("reads metadata to check if id represents a folder")
-        void returnTrueWhenPresent() throws ConnectionException, RemarkableClientException, JsonProcessingException {
+        void returnTrueWhenPresent() throws RemarkableConnectionException, RemarkableClientException, JsonProcessingException {
             // Given
             RemarkableMetadata metadata = metadataBuilder.create();
             String metadataJson = mapper.writeValueAsString(metadata);
@@ -129,7 +129,7 @@ class RemarkableClientTest {
     }
 
     @Test
-    void CreateFolderCreatesTwoFiles() throws ConnectionException, JsonProcessingException, RemarkableClientException {
+    void CreateFolderCreatesTwoFiles() throws RemarkableConnectionException, JsonProcessingException, RemarkableClientException {
         // Given
         RemarkableConnection connection = mock(RemarkableConnection.class);
         Clock fixedClock = Clock.fixed(Instant.now(),
@@ -185,7 +185,7 @@ class RemarkableClientTest {
         }
 
         @Test
-        void passFilesToConsumerFunction() throws ConnectionException {
+        void passFilesToConsumerFunction() throws RemarkableConnectionException {
             // Given
             RemarkableConnection connection = mock(RemarkableConnection.class);
             RemarkableClient client = new RemarkableClient(connection, Clock.systemUTC(), mapper);
@@ -211,7 +211,7 @@ class RemarkableClientTest {
         }
 
         @Test
-        void onlyAllowOneReadAtTheTime() throws ConnectionException {
+        void onlyAllowOneReadAtTheTime() throws RemarkableConnectionException {
             // Given
             RemarkableConnection connection = mock(RemarkableConnection.class);
             RemarkableClient client = new RemarkableClient(connection, Clock.systemUTC(), mapper);
@@ -231,17 +231,17 @@ class RemarkableClientTest {
         }
 
         @Test
-        void invokeErrorHandlingWhenConnectionCannotBeEstablished() throws ConnectionException,
+        void invokeErrorHandlingWhenConnectionCannotBeEstablished() throws RemarkableConnectionException,
                 ExecutionException, InterruptedException, TimeoutException {
             // Given
             RemarkableConnection connection = mock(RemarkableConnection.class);
             RemarkableClient client = new RemarkableClient(connection, Clock.systemUTC(), mapper);
 
-            ConnectionException connectionException = new ConnectionException("AI", null);
+            RemarkableConnectionException connectionException = new RemarkableConnectionException("AI", null);
             when(connection.readFileTree()).thenThrow(connectionException);
 
             // When
-            CompletableFuture<ConnectionException> result = new CompletableFuture<>();
+            CompletableFuture<RemarkableConnectionException> result = new CompletableFuture<>();
             client.readFileTree(null, result::complete);
 
             // Then

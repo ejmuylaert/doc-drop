@@ -53,12 +53,13 @@ public class RemarkableClient {
      *
      * @param id of the folder
      * @return true if the folder exits, false otherwise
-     * @throws ConnectionException       when connection with device failed, check can be re-run when connection is
-     *                                   re-established
-     * @throws RemarkableClientException when parsing the metadata failed or the the requested file doesn't represent a
-     *                                   folder. No use in repeating the request without changes on the device.
+     * @throws RemarkableConnectionException when connection with device failed, check can be re-run when connection is
+     *                                       re-established
+     * @throws RemarkableClientException     when parsing the metadata failed or the the requested file doesn't
+     *                                       represent a folder. No use in repeating the request without changes on the
+     *                                       device.
      */
-    public boolean folderExists(UUID id) throws ConnectionException, RemarkableClientException {
+    public boolean folderExists(UUID id) throws RemarkableConnectionException, RemarkableClientException {
         Path filePath = BASE_PATH.resolve(id.toString() + ".metadata");
         Optional<byte[]> contents = connection.readFile(filePath);
 
@@ -93,7 +94,8 @@ public class RemarkableClient {
      * @param errorHandler invoked in case there is an underlying SSH error
      * @return BUSY when command is already being executed, else AVAILABLE
      */
-    RemarkableStatus readFileTree(BiConsumer<UUID, String> fileConsumer, Consumer<ConnectionException> errorHandler) {
+    RemarkableStatus readFileTree(BiConsumer<UUID, String> fileConsumer,
+                                  Consumer<RemarkableConnectionException> errorHandler) {
 
         final long lockStamp = connectionLock.tryWriteLock();
         if (lockStamp == 0) {
@@ -107,11 +109,11 @@ public class RemarkableClient {
                     try {
                         String contents = connection.readFileOld(info.getPath());
                         fileConsumer.accept(id, contents);
-                    } catch (ConnectionException e) {
+                    } catch (RemarkableConnectionException e) {
                         e.printStackTrace();
                     }
                 });
-            } catch (ConnectionException e) {
+            } catch (RemarkableConnectionException e) {
                 log.error("Error during readFileTree", e);
                 errorHandler.accept(e);
             } finally {
@@ -128,7 +130,7 @@ public class RemarkableClient {
         // TODO: abstract get connection
         try {
             connection.writeNewFile(id + ".content", "{}");
-        } catch (ConnectionException e) {
+        } catch (RemarkableConnectionException e) {
             e.printStackTrace();
         }
 
@@ -140,7 +142,7 @@ public class RemarkableClient {
             connection.writeNewFile(id.toString() + ".metadata", s);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
-        } catch (ConnectionException e) {
+        } catch (RemarkableConnectionException e) {
             e.printStackTrace();
         }
 
