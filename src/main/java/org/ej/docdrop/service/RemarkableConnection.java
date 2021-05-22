@@ -40,22 +40,19 @@ class RemarkableConnection {
         }
 
         try {
-            sshClient.connect("192.168.2.2");
+            sshClient.connect("10.11.99.1");
         } catch (IOException e) {
             throw new RemarkableConnectionException("Trouble connecting to Remarkable", e);
         }
 
         try {
             sshClient.authPassword("root", "ZjZQdup7xQ");
-            connectSftp();
         } catch (UserAuthException e) {
             throw new RemarkableConnectionException("Failed to authenticate", e);
         } catch (TransportException e) {
             throw new RemarkableConnectionException("Trouble with connection during authentication", e);
         }
-    }
 
-    private void connectSftp() throws RemarkableConnectionException {
         if (sftpClient == null) {
             try {
                 sftpClient = sshClient.newSFTPClient();
@@ -132,6 +129,35 @@ class RemarkableConnection {
         }
     }
 
+    /**
+     * Write the contents of the file to the given (absolute) path.
+     * <p>
+     * The file should <b>not</b> exist yet (if file already exists, the RemarkableConnectionException is also thrown).
+     *
+     * @param path    the absolute path to the desired file
+     * @param content raw content of the file
+     * @throws RemarkableConnectionException when there is a problem with the connection to the device.
+     */
+    void writeNewFile(Path path, byte[] content) throws RemarkableConnectionException {
+        ensureConnection();
+
+        RemoteFile file = null; // Define file outside of try block so it can be closed in the finally block.
+        try {
+            file = sftpClient.open(path.toString(), Set.of(OpenMode.CREAT, OpenMode.EXCL, OpenMode.WRITE));
+            file.write(0, content, 0, content.length);
+        } catch (IOException e) {
+            throw new RemarkableConnectionException("Error creating file", e);
+        } finally {
+            if (file != null) {
+                try {
+                    file.close();
+                } catch (IOException e) {
+                    throw new RemarkableConnectionException("Error closing newly created file", e);
+                }
+            }
+        }
+    }
+
     String readFileOld(String path) throws RemarkableConnectionException {
         ensureConnection();
 
@@ -164,9 +190,6 @@ class RemarkableConnection {
         return new String(contents, StandardCharsets.UTF_8);
     }
 
-    void writeNewFile(String name, String content) throws RemarkableConnectionException {
-// Check that only new files are created (e.g. does ftp client throw error?)
-    }
 
     void createDirectory(UUID id, String name) throws RemarkableConnectionException {
         SFTPClient sftpClient;

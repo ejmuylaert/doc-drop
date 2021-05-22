@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Optional;
@@ -93,14 +94,14 @@ public class RemarkableClient {
      */
     void createFolder(UUID id, String name, UUID parentId) throws RemarkableConnectionException {
         // TODO: abstract get connection
-        connection.writeNewFile(BASE_PATH.resolve(id + ".content").toString(), "{}");
+        connection.writeNewFile(BASE_PATH.resolve(id + ".content"), "{}".getBytes(StandardCharsets.UTF_8));
 
         RemarkableMetadata metadata = new RemarkableMetadata(false, clock.instant(), 0, false, false, parentId, false,
                 false, DocumentType.FOLDER, 1, name);
 
         try {
-            String s = mapper.writeValueAsString(metadata);
-            connection.writeNewFile(BASE_PATH.resolve(id + ".metadata").toString(), s);
+            byte[] bytes = mapper.writeValueAsBytes(metadata);
+            connection.writeNewFile(BASE_PATH.resolve(id + ".metadata"), bytes);
         } catch (JsonProcessingException e) {
             // When this happen, there is a programming error. The RemarkableMetadata should always be serializable
             throw new RuntimeException("Error serializing metadata", e);

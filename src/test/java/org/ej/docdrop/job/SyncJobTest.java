@@ -138,6 +138,7 @@ public class SyncJobTest extends AbstractDatabaseTest {
         commandRepository.save(command2);
 
         JobExecution firstJobExecution = jobLauncherTestUtils.launchJob();
+        await().until(() -> firstJobExecution.getStatus().equals(BatchStatus.COMPLETED));
 
         CreateFolderCommand command3 = new CreateFolderCommand(UUID.randomUUID(), 3L, "name", null);
         commandRepository.save(command3);

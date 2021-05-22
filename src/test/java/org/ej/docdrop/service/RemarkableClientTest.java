@@ -13,7 +13,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -136,8 +138,7 @@ class RemarkableClientTest {
 
         @Test
         @DisplayName("creates content & metadata file under base path")
-        void createContentAndMetadataFiles() throws RemarkableConnectionException,
-                JsonProcessingException {
+        void createContentAndMetadataFiles() throws IOException {
             // Given
             RemarkableConnection connection = mock(RemarkableConnection.class);
             Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
@@ -148,15 +149,15 @@ class RemarkableClientTest {
             client.createFolder(folderId, "folder name", null);
 
             // Then
-            ArgumentCaptor<String> filenameCaptor = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
+            ArgumentCaptor<Path> filenameCaptor = ArgumentCaptor.forClass(Path.class);
+            ArgumentCaptor<byte[]> contentCaptor = ArgumentCaptor.forClass(byte[].class);
             verify(connection, times(2))
                     .writeNewFile(filenameCaptor.capture(), contentCaptor.capture());
 
-            assertThat(filenameCaptor.getAllValues().get(0)).isEqualTo(RemarkableClient.BASE_PATH.resolve(folderId + ".content").toString());
-            assertThat(contentCaptor.getAllValues().get(0)).isEqualTo("{}");
+            assertThat(filenameCaptor.getAllValues().get(0)).isEqualTo(RemarkableClient.BASE_PATH.resolve(folderId + ".content"));
+            assertThat(contentCaptor.getAllValues().get(0)).isEqualTo("{}".getBytes(StandardCharsets.UTF_8));
 
-            assertThat(filenameCaptor.getAllValues().get(1)).isEqualTo(RemarkableClient.BASE_PATH.resolve(folderId + ".metadata").toString());
+            assertThat(filenameCaptor.getAllValues().get(1)).isEqualTo(RemarkableClient.BASE_PATH.resolve(folderId + ".metadata"));
             RemarkableMetadata metadata = mapper.readValue(contentCaptor.getAllValues().get(1),
                     RemarkableMetadata.class);
 
@@ -177,8 +178,7 @@ class RemarkableClientTest {
 
         @Test
         @DisplayName("puts parent id in metadata")
-        void putParentInMetadata() throws RemarkableConnectionException,
-                JsonProcessingException {
+        void putParentInMetadata() throws IOException {
             // Given
             RemarkableConnection connection = mock(RemarkableConnection.class);
             Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
@@ -190,8 +190,8 @@ class RemarkableClientTest {
             client.createFolder(folderId, "another name", parentId);
 
             // Then
-            ArgumentCaptor<String> filenameCaptor = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
+            ArgumentCaptor<Path> filenameCaptor = ArgumentCaptor.forClass(Path.class);
+            ArgumentCaptor<byte[]> contentCaptor = ArgumentCaptor.forClass(byte[].class);
             verify(connection, times(2))
                     .writeNewFile(filenameCaptor.capture(), contentCaptor.capture());
             RemarkableMetadata metadata = mapper.readValue(contentCaptor.getAllValues().get(1),
