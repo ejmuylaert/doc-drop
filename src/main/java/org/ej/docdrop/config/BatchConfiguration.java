@@ -7,10 +7,11 @@ import org.ej.docdrop.repository.SyncCommandRepository;
 import org.ej.docdrop.service.SyncCommandHandler;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.*;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
@@ -21,7 +22,10 @@ import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.data.domain.Sort;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.Map;
 
@@ -37,28 +41,28 @@ public class BatchConfiguration {
 
     // When creating custom configuration, the  (global application) JPA transaction manager should be configured
     // explicitly, else the job and repositories don't work together nicely
-//    @Bean
-//    public BatchConfigurer batchConfigurer(JobRepository jobRepository, JpaTransactionManager transactionManager) {
-//        return new DefaultBatchConfigurer() {
-//            @Override
-//            public JobLauncher getJobLauncher() {
-//                SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
-//                jobLauncher.setJobRepository(jobRepository);
-//                jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor());
-//                try {
-//                    jobLauncher.afterPropertiesSet();
-//                } catch (Exception e) {
-//                    throw new RuntimeException("Error configuring JobLauncher", e);
-//                }
-//                return jobLauncher;
-//            }
-//
-//            @Override
-//            public PlatformTransactionManager getTransactionManager() {
-//                return transactionManager;
-//            }
-//        };
-//    }
+    @Bean
+    public BatchConfigurer batchConfigurer(JobRepository jobRepository, JpaTransactionManager transactionManager) {
+        return new DefaultBatchConfigurer() {
+            @Override
+            public JobLauncher getJobLauncher() {
+                SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
+                jobLauncher.setJobRepository(jobRepository);
+                jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor());
+                try {
+                    jobLauncher.afterPropertiesSet();
+                } catch (Exception e) {
+                    throw new RuntimeException("Error configuring JobLauncher", e);
+                }
+                return jobLauncher;
+            }
+
+            @Override
+            public PlatformTransactionManager getTransactionManager() {
+                return transactionManager;
+            }
+        };
+    }
 
     @Bean
     public RepositoryItemReader<SyncCommand> reader(SyncCommandRepository repository) {

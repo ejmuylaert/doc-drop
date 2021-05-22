@@ -20,6 +20,7 @@
         <testcontainers.version>1.15.2</testcontainers.version>
         <sshj.version>0.31.0</sshj.version>
         <pdfbox.version>3.0.0-RC1</pdfbox.version>
+        <awaitility.version>4.1.0</awaitility.version>
     </properties>
 
     <dependencies>
@@ -80,6 +81,12 @@
         <dependency>
             <groupId>org.springframework.batch</groupId>
             <artifactId>spring-batch-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>${awaitility.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>

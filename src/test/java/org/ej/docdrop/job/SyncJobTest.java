@@ -25,6 +25,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.ej.docdrop.domain.SyncResult.EXECUTION_FAILED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -63,18 +64,20 @@ public class SyncJobTest extends AbstractDatabaseTest {
 
         // When
         JobExecution jobExecution = jobLauncherTestUtils.launchJob();
+        await().until(() -> jobExecution.getStatus().equals(BatchStatus.COMPLETED));
+
         StepExecution stepExecution = jobExecution.getStepExecutions().stream().findFirst().get();
 
-        BatchStatus status = jobExecution.getStatus();
         // Then
-        assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
         assertThat(stepExecution.getExitStatus()).isEqualTo(ExitStatus.COMPLETED);
         assertThat(stepExecution.getReadCount()).isEqualTo(2);
         assertThat(stepExecution.getWriteCount()).isEqualTo(2);
         assertThat(stepExecution.getFilterCount()).isEqualTo(0);
 
-        SyncCommand updatedCmd1 = commandRepository.findById(new SyncCommand.CommandId(command1.getFileId(), command1.getCommandNumber())).get();
-        SyncCommand updatedCmd2 = commandRepository.findById(new SyncCommand.CommandId(command2.getFileId(), command2.getCommandNumber())).get();
+        SyncCommand updatedCmd1 = commandRepository.findById(new SyncCommand.CommandId(command1.getFileId(),
+                command1.getCommandNumber())).get();
+        SyncCommand updatedCmd2 = commandRepository.findById(new SyncCommand.CommandId(command2.getFileId(),
+                command2.getCommandNumber())).get();
 
         assertThat(updatedCmd1.getSyncResult()).isEqualTo(SyncResult.SUCCESS);
         assertThat(updatedCmd2.getSyncResult()).isEqualTo(SyncResult.SUCCESS);
@@ -89,7 +92,7 @@ public class SyncJobTest extends AbstractDatabaseTest {
         commandRepository.save(command1);
         commandRepository.save(command2);
 
-        when(commandHandler.apply(any(CreateFolderCommand.class))) .thenAnswer(invocation -> {
+        when(commandHandler.apply(any(CreateFolderCommand.class))).thenAnswer(invocation -> {
             SyncCommand command = invocation.getArgument(0);
             if (command.getCommandNumber() == 1L) {
                 return SyncEvent.create(command1, EXECUTION_FAILED, "message");
@@ -100,10 +103,13 @@ public class SyncJobTest extends AbstractDatabaseTest {
 
         // When
         JobExecution jobExecution = jobLauncherTestUtils.launchJob();
+        await().until(() -> jobExecution.getStatus().equals(BatchStatus.COMPLETED));
 
         // Then
-        SyncCommand updatedCmd1 = commandRepository.findById(new SyncCommand.CommandId(command1.getFileId(), command1.getCommandNumber())).get();
-        SyncCommand updatedCmd2 = commandRepository.findById(new SyncCommand.CommandId(command2.getFileId(), command2.getCommandNumber())).get();
+        SyncCommand updatedCmd1 = commandRepository.findById(new SyncCommand.CommandId(command1.getFileId(),
+                command1.getCommandNumber())).get();
+        SyncCommand updatedCmd2 = commandRepository.findById(new SyncCommand.CommandId(command2.getFileId(),
+                command2.getCommandNumber())).get();
 
         System.out.println(jobExecution.getExitStatus());
 
@@ -138,6 +144,8 @@ public class SyncJobTest extends AbstractDatabaseTest {
 
         // When
         JobExecution secondExecution = jobLauncherTestUtils.launchJob();
+        await().until(() -> secondExecution.getStatus().equals(BatchStatus.COMPLETED));
+
         StepExecution stepExecution = secondExecution.getStepExecutions().stream().findFirst().get();
 
         // Then
@@ -159,23 +167,25 @@ public class SyncJobTest extends AbstractDatabaseTest {
 
         when(commandHandler.apply(any(CreateFolderCommand.class))).thenThrow(new ConnectionException("No ...", null));
 
-
         // When
         JobExecution jobExecution = jobLauncherTestUtils.launchJob();
+        await().until(() -> jobExecution.getStatus().equals(BatchStatus.FAILED));
+
         StepExecution stepExecution = jobExecution.getStepExecutions().stream().findFirst().get();
 
-        BatchStatus status = jobExecution.getStatus();
         // Then
-        assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
-        assertThat(stepExecution.getExitStatus()).isEqualTo(ExitStatus.COMPLETED);
-        assertThat(stepExecution.getReadCount()).isEqualTo(2);
-        assertThat(stepExecution.getWriteCount()).isEqualTo(2);
+        assertThat(stepExecution.getExitStatus().getExitCode()).isEqualTo(ExitStatus.FAILED.getExitCode());
+        assertThat(stepExecution.getReadCount()).isEqualTo(1);
+        assertThat(stepExecution.getRollbackCount()).isEqualTo(1);
+        assertThat(stepExecution.getWriteCount()).isEqualTo(0);
         assertThat(stepExecution.getFilterCount()).isEqualTo(0);
 
-        SyncCommand updatedCmd1 = commandRepository.findById(new SyncCommand.CommandId(command1.getFileId(), command1.getCommandNumber())).get();
-        SyncCommand updatedCmd2 = commandRepository.findById(new SyncCommand.CommandId(command2.getFileId(), command2.getCommandNumber())).get();
+        SyncCommand updatedCmd1 = commandRepository.findById(new SyncCommand.CommandId(command1.getFileId(),
+                command1.getCommandNumber())).get();
+        SyncCommand updatedCmd2 = commandRepository.findById(new SyncCommand.CommandId(command2.getFileId(),
+                command2.getCommandNumber())).get();
 
-        assertThat(updatedCmd1.getSyncResult()).isEqualTo(SyncResult.SUCCESS);
-        assertThat(updatedCmd2.getSyncResult()).isEqualTo(SyncResult.SUCCESS);
+        assertThat(updatedCmd1.getSyncResult()).isNull();
+        assertThat(updatedCmd2.getSyncResult()).isNull();
     }
 }
