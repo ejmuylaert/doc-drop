@@ -87,10 +87,22 @@ class RemarkableConnection {
         return listing;
     }
 
+    /**
+     * Read the contents of file given by a path in a raw byte array.
+     * <p>
+     * Whenever an error occurs, a RemarkableConnectionException is thrown.
+     * <p>
+     * The <b>assumption</b> is, that this always is a problem with the connection to the device. But in theory it can
+     * also happen when there are no read rights of the requested file etc.
+     *
+     * @param path the absolute path to the desired file
+     * @return Option with contents of the file, or an empty option when the file is not found
+     * @throws RemarkableConnectionException when there is a problem with the connection to the device
+     */
     Optional<byte[]> readFile(Path path) throws RemarkableConnectionException {
         ensureConnection();
 
-        RemoteFile file = null;
+        RemoteFile file = null; // Define file outside of try block so it can be closed in the finally block.
         try {
             file = sftpClient.open(path.toString());
             int fileLength = Math.toIntExact(file.length());
@@ -153,7 +165,7 @@ class RemarkableConnection {
     }
 
     void writeNewFile(String name, String content) throws RemarkableConnectionException {
-
+// Check that only new files are created (e.g. does ftp client throw error?)
     }
 
     void createDirectory(UUID id, String name) throws RemarkableConnectionException {

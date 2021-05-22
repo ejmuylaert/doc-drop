@@ -74,7 +74,8 @@ class RemarkableClientTest {
 
         @Test
         @DisplayName("returns false when deleted flag is set")
-        void returnFalseWhenDeleted() throws JsonProcessingException, RemarkableConnectionException, RemarkableClientException {
+        void returnFalseWhenDeleted() throws JsonProcessingException, RemarkableConnectionException,
+                RemarkableClientException {
             RemarkableMetadata metadata = metadataBuilder.setDeleted(true).create();
             String metadataJson = mapper.writeValueAsString(metadata);
 
@@ -109,7 +110,8 @@ class RemarkableClientTest {
 
         @Test
         @DisplayName("reads metadata to check if id represents a folder")
-        void returnTrueWhenPresent() throws RemarkableConnectionException, RemarkableClientException, JsonProcessingException {
+        void returnTrueWhenPresent() throws RemarkableConnectionException, RemarkableClientException,
+                JsonProcessingException {
             // Given
             RemarkableMetadata metadata = metadataBuilder.create();
             String metadataJson = mapper.writeValueAsString(metadata);
@@ -128,44 +130,102 @@ class RemarkableClientTest {
         }
     }
 
-    @Test
-    void CreateFolderCreatesTwoFiles() throws RemarkableConnectionException, JsonProcessingException, RemarkableClientException {
-        // Given
-        RemarkableConnection connection = mock(RemarkableConnection.class);
-        Clock fixedClock = Clock.fixed(Instant.now(),
-                ZoneId.systemDefault());
-        RemarkableClient client = new RemarkableClient(connection, fixedClock, mapper);
-        UUID folderId = UUID.randomUUID();
+    @Nested
+    @DisplayName("createFolder")
+    class CreateFolder {
 
-        // When
-        client.createFolder(folderId, "folder name");
+        @Test
+        @DisplayName("creates content & metadata file under base path")
+        void createContentAndMetadataFiles() throws RemarkableConnectionException,
+                JsonProcessingException {
+            // Given
+            RemarkableConnection connection = mock(RemarkableConnection.class);
+            Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
+            RemarkableClient client = new RemarkableClient(connection, fixedClock, mapper);
+            UUID folderId = UUID.randomUUID();
 
-        // Then
-        ArgumentCaptor<String> filenameCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
-        verify(connection, times(2)).writeNewFile(filenameCaptor.capture(),
-                contentCaptor.capture());
+            // When
+            client.createFolder(folderId, "folder name", null);
 
-        assertThat(filenameCaptor.getAllValues().get(0)).isEqualTo(folderId + ".content");
-        assertThat(contentCaptor.getAllValues().get(0)).isEqualTo("{}");
+            // Then
+            ArgumentCaptor<String> filenameCaptor = ArgumentCaptor.forClass(String.class);
+            ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
+            verify(connection, times(2))
+                    .writeNewFile(filenameCaptor.capture(), contentCaptor.capture());
 
-        assertThat(filenameCaptor.getAllValues().get(1)).isEqualTo(folderId + ".metadata");
-        RemarkableMetadata metadata = mapper.readValue(contentCaptor.getAllValues().get(1),
-                RemarkableMetadata.class);
-        RemarkableMetadataBuilder builder = new RemarkableMetadataBuilder();
-        RemarkableMetadata expectedMetadata = builder
-                .setDeleted(false)
-                .setLastModified(fixedClock.instant().truncatedTo(ChronoUnit.MILLIS))
-                .setMetadataModified(false)
-                .setModified(false)
-                .setParent(null)
-                .setPinned(false)
-                .setType(DocumentType.FOLDER)
-                .setVersion(1)
-                .setVisibleName("folder name")
-                .create();
+            assertThat(filenameCaptor.getAllValues().get(0)).isEqualTo(RemarkableClient.BASE_PATH.resolve(folderId + ".content").toString());
+            assertThat(contentCaptor.getAllValues().get(0)).isEqualTo("{}");
 
-        assertThat(metadata).isEqualTo(expectedMetadata);
+            assertThat(filenameCaptor.getAllValues().get(1)).isEqualTo(RemarkableClient.BASE_PATH.resolve(folderId + ".metadata").toString());
+            RemarkableMetadata metadata = mapper.readValue(contentCaptor.getAllValues().get(1),
+                    RemarkableMetadata.class);
+
+            RemarkableMetadata expectedMetadata = new RemarkableMetadataBuilder()
+                    .setDeleted(false)
+                    .setLastModified(fixedClock.instant().truncatedTo(ChronoUnit.MILLIS))
+                    .setMetadataModified(false)
+                    .setModified(false)
+                    .setParent(null)
+                    .setPinned(false)
+                    .setType(DocumentType.FOLDER)
+                    .setVersion(1)
+                    .setVisibleName("folder name")
+                    .create();
+
+            assertThat(metadata).isEqualTo(expectedMetadata);
+        }
+
+        @Test
+        @DisplayName("puts parent id in metadata")
+        void putParentInMetadata() throws RemarkableConnectionException,
+                JsonProcessingException {
+            // Given
+            RemarkableConnection connection = mock(RemarkableConnection.class);
+            Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
+            RemarkableClient client = new RemarkableClient(connection, fixedClock, mapper);
+            UUID folderId = UUID.randomUUID();
+            UUID parentId = UUID.randomUUID();
+
+            // When
+            client.createFolder(folderId, "another name", parentId);
+
+            // Then
+            ArgumentCaptor<String> filenameCaptor = ArgumentCaptor.forClass(String.class);
+            ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
+            verify(connection, times(2))
+                    .writeNewFile(filenameCaptor.capture(), contentCaptor.capture());
+            RemarkableMetadata metadata = mapper.readValue(contentCaptor.getAllValues().get(1),
+                    RemarkableMetadata.class);
+
+            RemarkableMetadata expectedMetadata = new RemarkableMetadataBuilder()
+                    .setDeleted(false)
+                    .setLastModified(fixedClock.instant().truncatedTo(ChronoUnit.MILLIS))
+                    .setMetadataModified(false)
+                    .setModified(false)
+                    .setParent(parentId)
+                    .setPinned(false)
+                    .setType(DocumentType.FOLDER)
+                    .setVersion(1)
+                    .setVisibleName("another name")
+                    .create();
+
+            assertThat(metadata).isEqualTo(expectedMetadata);
+        }
+
+        @Test
+        @DisplayName("re-throws connection exceptions")
+        void rethrowExceptions() throws RemarkableConnectionException {
+            RemarkableConnection connection = mock(RemarkableConnection.class);
+            Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
+            RemarkableClient client = new RemarkableClient(connection, fixedClock, mapper);
+            UUID folderId = UUID.randomUUID();
+
+            doThrow(new RemarkableConnectionException("BOOM!", null)).when(connection).writeNewFile(any(), any());
+
+            // When
+            assertThatThrownBy(() -> client.createFolder(folderId, "another name", null))
+                    .isInstanceOf(RemarkableConnectionException.class);
+        }
     }
 
     @Nested

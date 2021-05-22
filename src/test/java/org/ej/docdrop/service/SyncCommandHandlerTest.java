@@ -80,7 +80,7 @@ class SyncCommandHandlerTest {
 
             // Then
             assertThat(event.getResult()).isEqualTo(SyncResult.SUCCESS);
-            verify(client, times(1)).createFolder(command.getFileId(), command.getName());
+            verify(client, times(1)).createFolder(command.getFileId(), command.getName(), command.getParentId());
         }
 
         @Test
@@ -97,7 +97,7 @@ class SyncCommandHandlerTest {
 
             // Then
             assertThat(event.getResult()).isEqualTo(SyncResult.SUCCESS);
-            verify(client, times(1)).createFolder(command.getFileId(), command.getName());
+            verify(client, times(1)).createFolder(command.getFileId(), command.getName(), command.getParentId());
         }
 
         @Test

@@ -29,7 +29,7 @@ public class SyncCommandHandler {
                 return SyncEvent.create(command, PRE_CONDITION_FAILED, "Folder already exists");
 
             }
-            client.createFolder(command.getFileId(), command.getName());
+            client.createFolder(command.getFileId(), command.getName(), command.getParentId());
             return SyncEvent.create(command, SUCCESS, "");
 
         } catch (RemarkableClientException e) {

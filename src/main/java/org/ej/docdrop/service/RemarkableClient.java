@@ -80,6 +80,34 @@ public class RemarkableClient {
         }
     }
 
+    /**
+     * Creates the files representing a folder on the device.
+     * <p>
+     * It assumes that the caller already verified that the folder doesn't already exists on the device.
+     *
+     * @param id       of the folder
+     * @param name     name
+     * @param parentId id of the parent folder
+     * @throws RemarkableConnectionException when connection with device failed, check can be re-run when connection is
+     *                                       re-established
+     */
+    void createFolder(UUID id, String name, UUID parentId) throws RemarkableConnectionException {
+        // TODO: abstract get connection
+        connection.writeNewFile(BASE_PATH.resolve(id + ".content").toString(), "{}");
+
+        RemarkableMetadata metadata = new RemarkableMetadata(false, clock.instant(), 0, false, false, parentId, false,
+                false, DocumentType.FOLDER, 1, name);
+
+        try {
+            String s = mapper.writeValueAsString(metadata);
+            connection.writeNewFile(BASE_PATH.resolve(id + ".metadata").toString(), s);
+        } catch (JsonProcessingException e) {
+            // When this happen, there is a programming error. The RemarkableMetadata should always be serializable
+            throw new RuntimeException("Error serializing metadata", e);
+        }
+    }
+
+
     public boolean fileExists(UUID id) throws RemarkableClientException {
         return false;
     }
@@ -126,27 +154,6 @@ public class RemarkableClient {
         return RemarkableStatus.AVAILABLE;
     }
 
-    void createFolder(UUID id, String name) throws RemarkableClientException {
-        // TODO: abstract get connection
-        try {
-            connection.writeNewFile(id + ".content", "{}");
-        } catch (RemarkableConnectionException e) {
-            e.printStackTrace();
-        }
-
-        RemarkableMetadata metadata = new RemarkableMetadata(false, clock.instant(), 0, false, false, null, false,
-                false, DocumentType.FOLDER, 1, name);
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            String s = mapper.writeValueAsString(metadata);
-            connection.writeNewFile(id.toString() + ".metadata", s);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        } catch (RemarkableConnectionException e) {
-            e.printStackTrace();
-        }
-
-    }
 
     private static String baseName(String fileName) {
         int i = fileName.lastIndexOf('.');
