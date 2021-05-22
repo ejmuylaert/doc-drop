@@ -84,6 +84,23 @@ class SyncCommandHandlerTest {
         }
 
         @Test
+        @DisplayName("creates the folder when pre-conditions are met (in root folder")
+        void createFolderInRootFolder() throws RemarkableClientException, ConnectionException {
+            // Given
+            CreateFolderCommand command = new CreateFolderCommand(UUID.randomUUID(), 1L, "name", null);
+
+            when(client.folderExists(null)).thenThrow(new NullPointerException());
+            when(client.folderExists(command.getFileId())).thenReturn(false);
+
+            // When
+            SyncEvent event = handler.apply(command);
+
+            // Then
+            assertThat(event.getResult()).isEqualTo(SyncResult.SUCCESS);
+            verify(client, times(1)).createFolder(command.getFileId(), command.getName());
+        }
+
+        @Test
         @DisplayName("aborts when client connection is available")
         void abortWhenClientNotAvailable() throws RemarkableClientException, ConnectionException {
             // Given

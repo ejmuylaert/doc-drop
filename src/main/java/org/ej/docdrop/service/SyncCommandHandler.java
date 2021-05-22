@@ -22,7 +22,7 @@ public class SyncCommandHandler {
 
     public SyncEvent apply(CreateFolderCommand command) throws ConnectionException {
         try {
-            if (!client.folderExists(command.getParentId())) {
+            if (command.getParentId() != null && !client.folderExists(command.getParentId())) {
                 return SyncEvent.create(command, PRE_CONDITION_FAILED, "Parent folder does not exist");
             }
             if (client.folderExists(command.getFileId())) {
