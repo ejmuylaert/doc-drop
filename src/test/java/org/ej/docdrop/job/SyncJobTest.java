@@ -85,7 +85,7 @@ public class SyncJobTest extends AbstractDatabaseTest {
 
     @Test
     @DisplayName("Save error with message to database & continue")
-    void saveErrorAndContinue() throws Exception {
+    void saveErrorAndContinue() throws Exception, RemarkableConnectionException {
         // Given
         CreateFolderCommand command1 = new CreateFolderCommand(UUID.randomUUID(), 1L, "name", null);
         CreateFolderCommand command2 = new CreateFolderCommand(UUID.randomUUID(), 2L, "name", null);
@@ -127,7 +127,7 @@ public class SyncJobTest extends AbstractDatabaseTest {
 
     @Test
     @DisplayName("second run gets the new commands")
-    void secondRunWithNewCommands() throws Exception {
+    void secondRunWithNewCommands() throws Exception, RemarkableConnectionException {
         // Given
         when(commandHandler.apply(any(CreateFolderCommand.class)))
                 .thenAnswer(invocation -> SyncEvent.create(invocation.getArgument(0), SyncResult.SUCCESS, ""));
@@ -159,7 +159,7 @@ public class SyncJobTest extends AbstractDatabaseTest {
 
     @Test
     @DisplayName("Abort job when connection not available")
-    void abortJobWhenConnectionNotAvailable() throws Exception {
+    void abortJobWhenConnectionNotAvailable() throws Exception, RemarkableConnectionException {
         // Given
         CreateFolderCommand command1 = new CreateFolderCommand(UUID.randomUUID(), 1L, "name", null);
         CreateFolderCommand command2 = new CreateFolderCommand(UUID.randomUUID(), 2L, "name", null);

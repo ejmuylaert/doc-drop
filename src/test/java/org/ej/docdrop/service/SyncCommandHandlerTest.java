@@ -132,8 +132,8 @@ class SyncCommandHandlerTest {
     }
 
     @Nested
-    @DisplayName("Copy file to Remarkable")
-    class CopyFile {
+    @DisplayName("Upload file to Remarkable")
+    class UploadFile {
 
         @Test
         @DisplayName("fails when parent folder doesn't exists")
@@ -176,6 +176,27 @@ class SyncCommandHandlerTest {
             Path thumbnailPath = Path.of("thumbnail");
 
             when(client.folderExists(command.getParentId())).thenReturn(true);
+            when(client.fileExists(command.getFileId())).thenReturn(false);
+            when(storage.getFilePath(command.getFileId())).thenReturn(filePath);
+            when(storage.getThumbnailPath(command.getFileId())).thenReturn(thumbnailPath);
+
+            // When
+            SyncEvent event = handler.apply(command);
+
+            // Then
+            assertThat(event.getResult()).isEqualTo(SyncResult.SUCCESS);
+            verify(client, times(1)).uploadFile(command.getFileId(), command.getParentId(), "name", filePath, thumbnailPath);
+        }
+
+        @Test
+        @DisplayName("copies given file with the thumbnail to root folder")
+        void copyFilInRoot() throws RemarkableClientException, RemarkableConnectionException {
+            // Given
+            UploadFileCommand command = new UploadFileCommand(UUID.randomUUID(), 1L, "name", null);
+            Path filePath = Path.of("file");
+            Path thumbnailPath = Path.of("thumbnail");
+
+            when(client.folderExists(null)).thenThrow(new NullPointerException());
             when(client.fileExists(command.getFileId())).thenReturn(false);
             when(storage.getFilePath(command.getFileId())).thenReturn(filePath);
             when(storage.getThumbnailPath(command.getFileId())).thenReturn(thumbnailPath);

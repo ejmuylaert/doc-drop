@@ -39,7 +39,7 @@ public class SyncCommandHandler {
 
     public SyncEvent apply(UploadFileCommand command) throws RemarkableConnectionException {
         try {
-            if (!client.folderExists(command.getParentId())) {
+            if (command.getParentId() != null && !client.folderExists(command.getParentId())) {
                 return SyncEvent.create(command, PRE_CONDITION_FAILED, "Parent folder does not exists");
             }
             if (client.fileExists(command.getFileId())) {

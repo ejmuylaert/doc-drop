@@ -3,7 +3,9 @@ package org.ej.docdrop.config;
 import org.ej.docdrop.domain.CreateFolderCommand;
 import org.ej.docdrop.domain.SyncCommand;
 import org.ej.docdrop.domain.SyncEvent;
+import org.ej.docdrop.domain.UploadFileCommand;
 import org.ej.docdrop.repository.SyncCommandRepository;
+import org.ej.docdrop.service.RemarkableConnectionException;
 import org.ej.docdrop.service.SyncCommandHandler;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -81,14 +83,28 @@ public class BatchConfiguration {
     public ItemProcessor<SyncCommand, SyncCommand> processor(SyncCommandHandler commandHandler) {
 
         return item -> {
-            if (item instanceof CreateFolderCommand command) {
-                SyncEvent event = commandHandler.apply(command);
-                item.setResult(event);
-                return item;
+            if (item instanceof CreateFolderCommand createFolderCommand) {
+                try {
+                    SyncEvent event = commandHandler.apply(createFolderCommand);
+                    item.setResult(event);
+                    return item;
+                } catch (RemarkableConnectionException e) {
+                    throw new RuntimeException("Connection problem", e);
+                }
+            } else if (item instanceof UploadFileCommand uploadFileCommand) {
+                try {
+                    SyncEvent event = commandHandler.apply(uploadFileCommand);
+                    item.setResult(event);
+                    return item;
+                } catch (RemarkableConnectionException e) {
+                    throw new RuntimeException("Connection problem", e);
+                }
             } else {
                 throw new RuntimeException("Unexpected command");
             }
-        };
+        }
+
+                ;
     }
 
     @Bean

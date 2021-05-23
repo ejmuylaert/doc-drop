@@ -3,6 +3,7 @@ package org.ej.docdrop.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ej.docdrop.domain.DocumentType;
+import org.ej.docdrop.domain.RemarkableContent;
 import org.ej.docdrop.domain.RemarkableMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Optional;
@@ -108,6 +110,25 @@ public class RemarkableClient {
         }
     }
 
+    public void uploadFile(UUID fileId, UUID parentId, String name, Path path, Path thumbnailPath) throws RemarkableConnectionException {
+
+        RemarkableContent content = RemarkableContent.defaultContent();
+        RemarkableMetadata metadata = new RemarkableMetadata(false, clock.instant(), 0, false, false, parentId, false,
+                false, DocumentType.DOCUMENT, 1, name);
+
+        try {
+            connection.writeNewFile(BASE_PATH.resolve(fileId + ".content"), mapper.writeValueAsBytes(content));
+            connection.writeNewFile(BASE_PATH.resolve(fileId + ".metadata"), mapper.writeValueAsBytes(metadata));
+            connection.writeNewFile(BASE_PATH.resolve(fileId + ".pdf"), Files.readAllBytes(path));
+        } catch (JsonProcessingException e) {
+            // When this happen, there is a programming error. The RemarkableMetadata should always be serializable
+            throw new RuntimeException("Error serializing metadata or content", e);
+        } catch (IOException e) {
+            // This happens when the source file cannot be read, there is no valid reason for this case ...
+            throw new RuntimeException("Could not read file to upload to remarkable: " + path, e);
+        }
+    }
+
 
     public boolean fileExists(UUID id) throws RemarkableClientException {
         return false;
@@ -166,9 +187,6 @@ public class RemarkableClient {
         }
     }
 
-    public void uploadFile(UUID fileId, UUID parentId, String name, Path path, Path thumbnailPath) throws RemarkableClientException {
-
-    }
 }
 
 /**
