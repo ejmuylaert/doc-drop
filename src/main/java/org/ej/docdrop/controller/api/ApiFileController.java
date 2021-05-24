@@ -29,10 +29,10 @@ class ApiFileController {
         return new FilesDTO(files, path);
     }
 
-    @PostMapping
+    @PostMapping(value = {"", "{folderId}"})
     @ResponseStatus(HttpStatus.CREATED)
-    FileInfo createFolder(@RequestBody CreateFolderDTO command) {
-        return fileService.createFolder(command.getName(), null);
+    FileInfo createFolder(@PathVariable Optional<UUID> folderId, @RequestBody CreateFolderDTO command) {
+        return fileService.createFolder(command.getName(), folderId.orElse(null));
     }
 }
 

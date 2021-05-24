@@ -119,5 +119,24 @@ class FileControllerTest {
 
             verify(service).createFolder("my folder", null);
         }
+
+        @Test
+        @DisplayName("nest folder if requested")
+        void createNestedFolder() throws Exception {
+            // Given
+            UUID parentId = UUID.randomUUID();
+            FileInfo newFolder = new FileInfo(parentId, true, "my folder");
+            when(service.createFolder(any(String.class), any())).thenReturn(newFolder);
+
+            // When, Then
+            mockMvc.perform(post("/api/files/{parentId}", parentId).contentType(MediaType.APPLICATION_JSON).content("""
+                            {"name": "my folder"}
+                    """))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.name", is("my folder")))
+                    .andExpect(jsonPath("$.parentId", is(parentId.toString())));
+
+            verify(service).createFolder("my folder", parentId);
+        }
     }
 }

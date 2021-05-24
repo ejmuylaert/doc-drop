@@ -2,7 +2,7 @@ import { faFolder } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useState } from "react";
 import { Breadcrumb, BreadcrumbItem, Button, Form, Table } from "react-bootstrap";
-import { useParams } from "react-router";
+import { useHistory, useParams } from "react-router";
 import { Link } from "react-router-dom";
 
 function FilePath({ path }) {
@@ -11,7 +11,7 @@ function FilePath({ path }) {
         <Breadcrumb>
             <BreadcrumbItem linkAs={Link} linkProps={{ to: "/" }} active={path.length === 0}>Root</BreadcrumbItem>
             {path.map((folder, index) => (
-                <BreadcrumbItem linkAs={Link} linkProps={{ to: "/" + folder.id }} active={path.length === (index + 1)}>
+                <BreadcrumbItem key={folder.id} linkAs={Link} linkProps={{ to: "/" + folder.id }} active={path.length === (index + 1)}>
                     {folder.name}
                 </BreadcrumbItem>
             ))}
@@ -23,6 +23,7 @@ export default function FileList() {
 
     // when destructing, the destructed value doesn't show up in useEffect (don't know why)
     const params = useParams();
+    const history = useHistory();
 
     const [isLoaded, setIsLoaded] = useState(false);
     const [folders, setFolders] = useState([]);
@@ -46,7 +47,6 @@ export default function FileList() {
                     setIsLoaded(true);
                     setFolders(files.filter(file => file.folder));
                     setFiles(files.filter(file => !file.folder));
-                    console.log(result);
                     setPath(path);
                 },
                 error => {
@@ -58,16 +58,18 @@ export default function FileList() {
     const createFolder = (event) => {
         event.preventDefault();
 
+        const { folderId } = params;
+        const uri = "/api/files/" + (folderId !== undefined ? folderId : "");
         const requestOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: newFolderName })
         };
-        fetch('/api/files', requestOptions)
+        fetch(uri, requestOptions)
             .then(response => response.json())
-            .then(data => console.log(data));
-
-        console.log("creating folder,  " + newFolderName);
+            .then(data => {
+                history.push("/" + data.id)
+            });
     }
 
     if (error) {
