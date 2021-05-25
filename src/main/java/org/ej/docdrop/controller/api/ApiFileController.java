@@ -6,7 +6,11 @@ import org.ej.docdrop.domain.FileInfo;
 import org.ej.docdrop.service.FileService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +37,14 @@ class ApiFileController {
     @ResponseStatus(HttpStatus.CREATED)
     FileInfo createFolder(@PathVariable Optional<UUID> folderId, @RequestBody CreateFolderDTO command) {
         return fileService.createFolder(command.getName(), folderId.orElse(null));
+    }
+
+    @PostMapping("upload")
+    @ResponseStatus(HttpStatus.CREATED)
+    void uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
+        Path tempFile = Files.createTempFile("docdrop_", null);
+        file.transferTo(tempFile);
+        fileService.addFile(file.getOriginalFilename(), tempFile, null);
     }
 }
 

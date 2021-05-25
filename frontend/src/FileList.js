@@ -1,7 +1,8 @@
 import { faFolder } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Breadcrumb, BreadcrumbItem, Button, Form, Table } from "react-bootstrap";
+import { useDropzone } from "react-dropzone";
 import { useHistory, useParams } from "react-router";
 import { Link } from "react-router-dom";
 
@@ -32,6 +33,31 @@ export default function FileList() {
     const [error, setError] = useState(null);
 
     const [newFolderName, setNewFolderName] = useState("");
+
+    const onDrop = useCallback(acceptedFiles => {
+        console.log(acceptedFiles);
+
+        const formData = new FormData();
+
+        acceptedFiles.forEach(file => formData.append('file', file));
+
+        fetch(
+            '/files/upload',
+            {
+                method: 'POST',
+                body: formData,
+            }
+        )
+            .then((response) => response.json())
+            .then((result) => {
+                console.log('Success:', result);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+    }, []);
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
+
 
     useEffect(() => {
 
@@ -84,28 +110,31 @@ export default function FileList() {
                     <Form.Control placeholder="Folder name..." onChange={e => setNewFolderName(e.target.value)} />
                     < Button variant="primary" type="submit" className="ml-3">Create</Button>
                 </Form>
-                <Table striped bordered hover>
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th>Name</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {folders.map(folder => (
-                            <tr key={folder.id}>
-                                <td><FontAwesomeIcon icon={faFolder} /></td>
-                                <td><Link to={"/" + folder.id}>{folder.name}</Link></td>
+                <div {...getRootProps()}>
+                    <input {...getInputProps()} />
+                    <Table striped bordered hover>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Name</th>
                             </tr>
-                        ))}
-                        {files.map(file => (
-                            <tr key={file.id}>
-                                <td></td>
-                                <td>{file.name}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </Table>
+                        </thead>
+                        <tbody>
+                            {folders.map(folder => (
+                                <tr key={folder.id}>
+                                    <td><FontAwesomeIcon icon={faFolder} /></td>
+                                    <td><Link to={"/" + folder.id}>{folder.name}</Link></td>
+                                </tr>
+                            ))}
+                            {files.map(file => (
+                                <tr key={file.id}>
+                                    <td></td>
+                                    <td>{file.name}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+                </div>
             </>
         );
     }

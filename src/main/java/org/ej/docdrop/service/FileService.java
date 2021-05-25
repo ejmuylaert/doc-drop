@@ -65,6 +65,23 @@ public class FileService {
         saveCommand(number -> new UploadFileCommand(info.getId(), number, name, parentFolderId));
     }
 
+    // Todo: rethink existing thumbnail support
+    @Transactional
+    public void addFile(String name, Path filePath, UUID parentFolderId) {
+        assertFolderExist(parentFolderId);
+
+        FileInfo info = new FileInfo(parentFolderId, false, name);
+        try {
+            fileStorage.putFile(info.getId(), filePath);
+        } catch (StorageException e) {
+            throw new RuntimeException("Failed to move uploaded file", e);
+        }
+
+        fileInfoRepository.save(info);
+        saveCommand(number -> new UploadFileCommand(info.getId(), number, name, parentFolderId));
+    }
+
+
     @Transactional
     public FileInfo createFolder(String name, UUID parentFolderId) {
         assertFolderExist(parentFolderId);

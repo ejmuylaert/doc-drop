@@ -5,21 +5,27 @@ import org.ej.docdrop.service.FileService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = {ApiFileController.class})
@@ -137,6 +143,28 @@ class FileControllerTest {
                     .andExpect(jsonPath("$.parentId", is(parentId.toString())));
 
             verify(service).createFolder("my folder", parentId);
+        }
+    }
+
+    @Nested
+    @DisplayName("Upload file")
+    class UploadFile {
+
+        @Test
+        @DisplayName("Add file with FileService")
+        void addFileToRootFolder() throws Exception {
+            MockMultipartFile dummyFile = new MockMultipartFile("file", "original_filename", null,
+                    "dummy document".getBytes(StandardCharsets.UTF_8));
+
+            // When, Then
+            mockMvc.perform(multipart("/api/files/upload").file(dummyFile))
+                    .andExpect(status().isCreated());
+            // should return new FileInfo
+
+            ArgumentCaptor<Path> pathArgumentCaptor = ArgumentCaptor.forClass(Path.class);
+            verify(service).addFile(eq("original_filename"), pathArgumentCaptor.capture(), eq(null));
+            String contents = Files.readString(pathArgumentCaptor.getValue());
+            assertThat(contents).isEqualTo("dummy document");
         }
     }
 }
