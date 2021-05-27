@@ -10,9 +10,9 @@ function FilePath({ path }) {
 
     return (
         <Breadcrumb>
-            <BreadcrumbItem linkAs={Link} linkProps={{ to: "/" }} active={path.length === 0}>Root</BreadcrumbItem>
+            <BreadcrumbItem linkAs={Link} linkProps={{ to: "/ui" }} active={path.length === 0}>Root</BreadcrumbItem>
             {path.map((folder, index) => (
-                <BreadcrumbItem key={folder.id} linkAs={Link} linkProps={{ to: "/" + folder.id }} active={path.length === (index + 1)}>
+                <BreadcrumbItem key={folder.id} linkAs={Link} linkProps={{ to: "/ui/" + folder.id }} active={path.length === (index + 1)}>
                     {folder.name}
                 </BreadcrumbItem>
             ))}
@@ -56,7 +56,7 @@ export default function FileList() {
                 console.error('Error:', error);
             });
     }, []);
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
+    const { getRootProps, getInputProps } = useDropzone({ onDrop })
 
 
     useEffect(() => {
@@ -94,7 +94,7 @@ export default function FileList() {
         fetch(uri, requestOptions)
             .then(response => response.json())
             .then(data => {
-                history.push("/" + data.id)
+                history.push("/ui/" + data.id)
             });
     }
 
@@ -108,7 +108,7 @@ export default function FileList() {
                 <FilePath path={[...path]} />
                 <Form inline className="mb-3" onSubmit={createFolder}>
                     <Form.Control placeholder="Folder name..." onChange={e => setNewFolderName(e.target.value)} />
-                    < Button variant="primary" type="submit" className="ml-3">Create</Button>
+                    <Button variant="primary" type="submit" className="ml-3">Create</Button>
                 </Form>
                 <div {...getRootProps()}>
                     <input {...getInputProps()} />
@@ -123,7 +123,7 @@ export default function FileList() {
                             {folders.map(folder => (
                                 <tr key={folder.id}>
                                     <td><FontAwesomeIcon icon={faFolder} /></td>
-                                    <td><Link to={"/" + folder.id}>{folder.name}</Link></td>
+                                    <td><Link to={"/ui/" + folder.id} onClick={e => e.stopPropagation()}>{folder.name}</Link></td>
                                 </tr>
                             ))}
                             {files.map(file => (

@@ -51,7 +51,7 @@ class DocumentControllerTest {
 		MockMultipartFile emptyFile = new MockMultipartFile("file", new byte[]{});
 
 		// When, Then
-		mockMvc.perform(multipart("/upload").file(emptyFile).param("filename", ""))
+		mockMvc.perform(multipart("/base/upload").file(emptyFile).param("filename", ""))
 				.andExpect(status().is3xxRedirection()).andExpect(flash().attribute("error",
 				containsString("file")));
 	}
@@ -63,7 +63,7 @@ class DocumentControllerTest {
 				"dummy document".getBytes(StandardCharsets.UTF_8));
 
 		// When, Then
-		mockMvc.perform(multipart("/upload").file(dummyFile).param("filename", ""))
+		mockMvc.perform(multipart("/base/upload").file(dummyFile).param("filename", ""))
 				.andExpect(status().is3xxRedirection())
 				.andExpect(flash().attribute("message", containsString("uploaded")));
 
@@ -78,7 +78,7 @@ class DocumentControllerTest {
 				"dummy document".getBytes(StandardCharsets.UTF_8));
 
 		// When, Then
-		mockMvc.perform(multipart("/upload").file(dummyFile).param("filename", "given_filename"))
+		mockMvc.perform(multipart("/base/upload").file(dummyFile).param("filename", "given_filename"))
 				.andExpect(status().is3xxRedirection())
 				.andExpect(flash().attribute("message", containsString("uploaded")));
 
@@ -93,7 +93,7 @@ class DocumentControllerTest {
 				"dummy document".getBytes(StandardCharsets.UTF_8));
 
 		// When, Then
-		mockMvc.perform(multipart("/upload").file(dummyFile).param("filename", "  "))
+		mockMvc.perform(multipart("/base/upload").file(dummyFile).param("filename", "  "))
 				.andExpect(status().is3xxRedirection())
 				.andExpect(flash().attribute("message", containsString("uploaded")));
 
@@ -108,7 +108,7 @@ class DocumentControllerTest {
 				"dummy document".getBytes(StandardCharsets.UTF_8));
 
 		// When, Then
-		mockMvc.perform(multipart("/upload").file(dummyFile).param("filename",
+		mockMvc.perform(multipart("/base/upload").file(dummyFile).param("filename",
 				"   given_filename" + "   "))
 				.andExpect(status().is3xxRedirection())
 				.andExpect(flash().attribute("message", containsString("uploaded")));
@@ -127,7 +127,7 @@ class DocumentControllerTest {
 				null)));
 
 		// When, Then
-		mockMvc.perform(get("/download/10")).andExpect(status().isOk())
+		mockMvc.perform(get("/base/download/10")).andExpect(status().isOk())
 				.andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; " +
 						"filename=\"name.orig\""))
 				.andExpect(header().string(HttpHeaders.CONTENT_TYPE, "application/pdf"));
@@ -139,6 +139,6 @@ class DocumentControllerTest {
 		when(repository.findById(42L)).thenReturn(Optional.empty());
 
 		// When, Then
-		mockMvc.perform(get("/download/42")).andExpect(status().isNotFound());
+		mockMvc.perform(get("/base/download/42")).andExpect(status().isNotFound());
 	}
 }

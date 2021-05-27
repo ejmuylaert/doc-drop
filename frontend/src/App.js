@@ -1,15 +1,18 @@
-import { BrowserRouter, Route } from "react-router-dom";
+import { BrowserRouter, Redirect, Route } from "react-router-dom";
 import "./App.css";
 import FileList from "./FileList";
 
 function App() {
   return (
     <BrowserRouter>
-      <Route path="/:folderId">
+      <Route path="/ui/:folderId">
+        <FileList />
+      </Route>
+      <Route exact path="/ui">
         <FileList />
       </Route>
       <Route exact path="/">
-        <FileList />
+        <Redirect to="/ui" />
       </Route>
     </BrowserRouter>
   );
