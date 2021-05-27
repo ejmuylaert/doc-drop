@@ -155,16 +155,51 @@ class FileControllerTest {
         void addFileToRootFolder() throws Exception {
             MockMultipartFile dummyFile = new MockMultipartFile("file", "original_filename", null,
                     "dummy document".getBytes(StandardCharsets.UTF_8));
+            when(service.addFile(any(), any(), any())).thenReturn(new FileInfo(null, false, "original_filename"));
 
             // When, Then
             mockMvc.perform(multipart("/api/files/upload").file(dummyFile))
                     .andExpect(status().isCreated());
-            // should return new FileInfo
 
             ArgumentCaptor<Path> pathArgumentCaptor = ArgumentCaptor.forClass(Path.class);
             verify(service).addFile(eq("original_filename"), pathArgumentCaptor.capture(), eq(null));
             String contents = Files.readString(pathArgumentCaptor.getValue());
             assertThat(contents).isEqualTo("dummy document");
+        }
+
+        @Test
+        @DisplayName("Returns FileInfo of the just uploaded file")
+        void returnFileInfo() throws Exception {
+            MockMultipartFile dummyFile = new MockMultipartFile("file", "original_filename", null,
+                    "dummy document".getBytes(StandardCharsets.UTF_8));
+            when(service.addFile(any(), any(), any())).thenReturn(new FileInfo(null, false, "original_filename"));
+
+            // When, Then
+            mockMvc.perform(multipart("/api/files/upload").file(dummyFile))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.folder", is(false)))
+                    .andExpect(jsonPath("$.name", is("original_filename")));
+        }
+
+        @Test
+        @DisplayName("can upload in specified folder")
+        void uploadInFolder() throws Exception {
+            // Given
+            UUID parentId = UUID.randomUUID();
+            MockMultipartFile dummyFile = new MockMultipartFile("file", "original_filename", null,
+                    "dummy document".getBytes(StandardCharsets.UTF_8));
+            when(service.addFile(any(), any(), any())).thenReturn(new FileInfo(parentId, false, "original_filename"));
+
+            // When, Then
+            mockMvc.perform(multipart("/api/files/{folderId}/upload", parentId).file(dummyFile))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.parentId", is(parentId.toString())))
+                    .andExpect(jsonPath("$.folder", is(false)))
+                    .andExpect(jsonPath("$.name", is("original_filename")));
+
+            ArgumentCaptor<UUID> pathArgumentCaptor = ArgumentCaptor.forClass(UUID.class);
+            verify(service).addFile(eq("original_filename"), any(Path.class), pathArgumentCaptor.capture());
+            assertThat(pathArgumentCaptor.getValue()).isEqualTo(parentId);
         }
     }
 }

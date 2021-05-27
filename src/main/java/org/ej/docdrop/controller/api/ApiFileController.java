@@ -39,12 +39,12 @@ class ApiFileController {
         return fileService.createFolder(command.getName(), folderId.orElse(null));
     }
 
-    @PostMapping("upload")
+    @PostMapping(value = {"{folderId}/upload", "upload"})
     @ResponseStatus(HttpStatus.CREATED)
-    void uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
+    FileInfo uploadFile(@PathVariable Optional<UUID> folderId, @RequestParam("file") MultipartFile file) throws IOException {
         Path tempFile = Files.createTempFile("docdrop_", null);
         file.transferTo(tempFile);
-        fileService.addFile(file.getOriginalFilename(), tempFile, null);
+        return fileService.addFile(file.getOriginalFilename(), tempFile, folderId.orElse(null));
     }
 }
 

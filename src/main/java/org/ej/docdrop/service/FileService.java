@@ -67,7 +67,7 @@ public class FileService {
 
     // Todo: rethink existing thumbnail support
     @Transactional
-    public void addFile(String name, Path filePath, UUID parentFolderId) {
+    public FileInfo addFile(String name, Path filePath, UUID parentFolderId) {
         assertFolderExist(parentFolderId);
 
         FileInfo info = new FileInfo(parentFolderId, false, name);
@@ -79,6 +79,7 @@ public class FileService {
 
         fileInfoRepository.save(info);
         saveCommand(number -> new UploadFileCommand(info.getId(), number, name, parentFolderId));
+        return info;
     }
 
 

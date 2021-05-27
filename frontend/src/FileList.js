@@ -1,6 +1,6 @@
 import { faFolder } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Breadcrumb, BreadcrumbItem, Button, Form, Table } from "react-bootstrap";
 import { useDropzone } from "react-dropzone";
 import { useHistory, useParams } from "react-router";
@@ -34,7 +34,7 @@ export default function FileList() {
 
     const [newFolderName, setNewFolderName] = useState("");
 
-    const onDrop = useCallback(acceptedFiles => {
+    const onDrop = acceptedFiles => {
         console.log(acceptedFiles);
 
         const formData = new FormData();
@@ -42,7 +42,7 @@ export default function FileList() {
         acceptedFiles.forEach(file => formData.append('file', file));
 
         fetch(
-            '/files/upload',
+            `/api/files/upload`,
             {
                 method: 'POST',
                 body: formData,
@@ -50,12 +50,12 @@ export default function FileList() {
         )
             .then((response) => response.json())
             .then((result) => {
-                console.log('Success:', result);
+                setFiles([...files, result]);
             })
             .catch((error) => {
                 console.error('Error:', error);
             });
-    }, []);
+    };
     const { getRootProps, getInputProps } = useDropzone({ onDrop })
 
 
