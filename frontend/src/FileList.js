@@ -98,6 +98,13 @@ export default function FileList() {
             });
     }
 
+    const navigateToFolder = (folderId) => {
+        return (event) => {
+            event.stopPropagation();
+            history.push("/ui/" + folderId);
+        }
+    }
+
     if (error) {
         return <div>Error: ${error.message}</div>;
     } else if (!isLoaded) {
@@ -121,7 +128,7 @@ export default function FileList() {
                         </thead>
                         <tbody>
                             {folders.map(folder => (
-                                <tr key={folder.id}>
+                                <tr key={folder.id} onClick={navigateToFolder(folder.id)}>
                                     <td><FontAwesomeIcon icon={faFolder} /></td>
                                     <td><Link to={"/ui/" + folder.id} onClick={e => e.stopPropagation()}>{folder.name}</Link></td>
                                 </tr>
