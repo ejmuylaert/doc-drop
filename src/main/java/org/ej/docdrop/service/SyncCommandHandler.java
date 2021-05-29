@@ -1,6 +1,7 @@
 package org.ej.docdrop.service;
 
 import org.ej.docdrop.domain.CreateFolderCommand;
+import org.ej.docdrop.domain.SyncCommand;
 import org.ej.docdrop.domain.SyncEvent;
 import org.ej.docdrop.domain.UploadFileCommand;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,19 @@ public class SyncCommandHandler {
         this.storage = storage;
     }
 
-    public SyncEvent apply(CreateFolderCommand command) throws RemarkableConnectionException {
+    public SyncEvent apply(SyncCommand command) throws RemarkableConnectionException {
+        if (command instanceof CreateFolderCommand createFolderCommand) {
+            return apply(createFolderCommand);
+        }
+
+        if (command instanceof UploadFileCommand uploadFileCommand) {
+            return apply(uploadFileCommand);
+        }
+
+        throw new RuntimeException("Unsupported command: " + command);
+    }
+
+    private SyncEvent apply(CreateFolderCommand command) throws RemarkableConnectionException {
         try {
             if (command.getParentId() != null && !client.folderExists(command.getParentId())) {
                 return SyncEvent.create(command, PRE_CONDITION_FAILED, "Parent folder does not exist");
@@ -37,7 +50,7 @@ public class SyncCommandHandler {
         }
     }
 
-    public SyncEvent apply(UploadFileCommand command) throws RemarkableConnectionException {
+    private SyncEvent apply(UploadFileCommand command) throws RemarkableConnectionException {
         try {
             if (command.getParentId() != null && !client.folderExists(command.getParentId())) {
                 return SyncEvent.create(command, PRE_CONDITION_FAILED, "Parent folder does not exists");
